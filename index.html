@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yykdislab - 低成本数字化物理实验</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f5ff;
+        }
+        header {
+            position: relative; /* 添加相对定位 */
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #3498db, #8e44ad);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 3.8em;
+            font-weight: 8000;
+            color: #ffffff;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        p {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: #f0f0f0;
+        }
+        .section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        /* 下面的列表布局参数控制元素排列方式等，可以自行测试调整 */
+        ul {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4列，每列占据相等的空间 */
+            grid-auto-rows: minmax(30px, auto); /* 每行的高度最小为30px */
+            gap: 10px; /* 列和行之间的间距 */
+        }
+        li {
+            margin-bottom: 50px;
+            width: 50%; /* 调整宽度以适应两列布局 */
+        }
+        a {
+            color: #8e44ad;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        a:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+        .contact-info {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            background: linear-gradient(135deg, #3498db, #8e44ad);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .contact-info a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+        .contact-info a:hover {
+            color: #f0f0f0;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+        .contact-info i {
+            margin-right: 10px;
+        }
+        .email-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.9em;
+            color: #f0f0f0;
+        }
+        .email-info a {
+            color: #f0f0f0;
+            text-decoration: none;
+        }
+        .email-info a:hover {
+            text-decoration: underline;
+        }
+        .email-icon {
+            font-size: 1.2em;
+            margin-right: 5px;
+            color: #f0f0f0; /* bai'se色 */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="email-info">
+            <a href="mailto:yangyankun@hnu.edu.cn"><span class="email-icon">✉</span>yangyankun@hnu.edu.cn</a>
+        </div>
+        <h1>www.yykdislab.cn</h1>
+        <p>低成本数字化物理实验系统</p>
+        <p>湛江经开区一中小平科技创新实验室</p>
+    </header>
+
+    <div class="section">
+        <h2>网页上位机</h2>
+        <ul>
+            <li><a href="https://wirelessforce.yykdislab.cn/">无线力传感器</a></li>
+            <li><a href="https://ampere1.yykdislab.cn/">安培力实验1</a></li>
+            <li><a href="https://ampere2.yykdislab.cn/">安培力实验2</a></li>
+            <li><a href="https://ampere3.yykdislab.cn/">安培力实验3</a></li>
+        </ul>
+    </div>
+</body>
+</html>
