@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>yykdislab.cn汉字UTF-8编码和字模查询网页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        input {
+            font-size: 18px;
+            padding: 8px;
+            margin: 10px;
+        }
+        button {
+            font-size: 16px;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .dot-matrix {
+            font-family: monospace;
+            white-space: pre;
+            margin: 5px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        canvas {
+            margin: 5px;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            color: #007bff;
+        }
+        .char-result {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        #result p,
+        #result h4 {
+            margin: 5px 0;
+        }
+        /* 添加输入框提示语样式 */
+        input::placeholder {
+            color: #999999;  /* 灰色提示语 */
+            opacity: 1;  /* 确保提示语可见 */
+        }
+        
+        /* 输入框获得焦点时提示语消失 */
+        input:focus::placeholder {
+            color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>“yykdislab.cn”汉字UTF-8编码和字模查询网页</h1>
+        <div>
+            <input type="text" id="inputChar" placeholder="可输入多个汉字" onkeypress="handleKeyPress(event)">
+            <button onclick="getUTF8Code()">查询</button>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script src="font-data.js"></script>
+    <script>
+        // ------------------  汉字字模的数据结构定义 ------------------------ //
+        // 汉字字模数据结构
+        class FNT_GB16 {
+            constructor() {
+                this.Index = new Int8Array(2);  // 汉字内码索引
+                this.Msk = new Uint8Array(32);  // 点阵码数据
+            }
+        }
+
+        // 获取汉字的点阵数据
+        function getDotData(char) {
+            // 直接从 font-data.js 中获取点阵数据
+            return fontData[char] || null;
+        }
+
+        function getUTF8Code() {
+            const input = document.getElementById('inputChar').value;
+            if (!input) {
+                alert('请输入汉字！');
+                return;
+            }
+
+            const result = document.getElementById('result');
+            result.innerHTML = '';
+
+            // 遍历每个输入的汉字
+            for (const char of input) {
+                const codePoint = char.charCodeAt(0);
+                const hex = codePoint.toString(16).toUpperCase();
+                const utf8 = encodeURIComponent(char)
+                    .replace(/%/g, '')
+                    .toUpperCase();
+
+                // 为每个汉字创建独立的显示区域
+                result.innerHTML += `
+                    <div class="char-result">
+                        <p>汉字：${char}</p>
+                        <h4>UTF-8编码：${utf8}</h4>
+                        <p style="margin: 2px 0; font-size: 14px;">
+                            16x16点阵数据，横向取模左高位, 数据排列: 从上到下从左到右
+                        </p>
+`;
+
+                // 获取点阵数据
+                const dotData = getDotData(char);
+                
+                if (dotData) {
+                    // 显示十六进制数据，添加粗体样式
+                    let hexDisplay = '<div class="dot-matrix" style="font-weight: bold;">\n';
+                    for (let i = 0; i < dotData.length; i++) {
+                        hexDisplay += '0x' + dotData[i].toString(16).padStart(2, '0').toUpperCase();
+                        if (i < dotData.length - 1) hexDisplay += ', ';
+                        if ((i + 1) % 8 === 0) hexDisplay += '\n';
+                    }
+                    hexDisplay += '</div>';
+                    result.innerHTML += hexDisplay;
+                    
+                    // 为每个汉字创建独立的canvas
+                    result.innerHTML += `<canvas id="dotCanvas_${char}" width="140" height="140"></canvas>`;
+
+                    // 使用setTimeout确保canvas元素已创建
+                    setTimeout(() => {
+                        const canvas = document.getElementById(`dotCanvas_${char}`);
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.fillStyle = '#000000';
+                        
+                        const dotSize = 6;
+                        const padding = 2;
+                        const startX = 10;
+                        const startY = 10;
+
+                        // 绘制点阵
+                        for (let y = 0; y < 16; y++) {
+                            for (let x = 0; x < 16; x++) {
+                                const byteIndex = y + Math.floor(x / 8) * 16;
+                                const bitIndex = 7 - (x % 8);
+                                
+                                if ((dotData[byteIndex] >> bitIndex) & 1) {
+                                    ctx.fillRect(
+                                        startX + x * (dotSize + padding),
+                                        startY + y * (dotSize + padding),
+                                        dotSize,
+                                        dotSize
+                                    );
+                                }
+                                
+                                ctx.strokeStyle = '#e0e0e0';
+                                ctx.strokeRect(
+                                    startX + x * (dotSize + padding),
+                                    startY + y * (dotSize + padding),
+                                    dotSize,
+                                    dotSize
+                                );
+                            }
+                        }
+                    }, 0);
+                } else {
+                    result.innerHTML += `<p>抱歉，暂无该汉字的点阵数据</p>`;
+                }
+
+                result.innerHTML += '</div>'; // 关闭汉字显示区域
+            }
+        }
+
+        // 添加回车键处理函数
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                getUTF8Code();
+            }
+        }
+    </script>
+</body>
+</html>
