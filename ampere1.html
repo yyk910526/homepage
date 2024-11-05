@@ -1,0 +1,493 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安培力实验1</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 5px; background-color: #f0f8ff; }
+        .title-container { display: flex; justify-content: center; align-items: baseline; margin-bottom: 5px; }
+        h1 { margin: 0; color: #1e07f3; }
+        .designer { font-size: 20px; color: #010002f8; margin-left: 20px; font-family: 'Brush Script MT', cursive; font-style: italic; }
+        #controls-and-labels-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+        #controls-container { 
+            display: flex; 
+            justify-content: flex-start; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            padding-left: 80px; /* 添加左侧内边距 */
+        }
+        #data-labels-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            height: 510px; 
+            margin: -10px auto 0;
+        }
+        button { margin: 3px; padding: 10px 15px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #45a049; }
+        .data-label { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #1e07f3; 
+            margin-left: 15px; 
+            width: 180px; 
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>安培力实验1</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div id="controls-and-labels-container">
+        <div id="controls-container">
+            <button id="connect-button">扫描并连接</button>
+            <button id="collect-button" disabled>采集数据</button>
+            <button id="delete-last-button" disabled>删除上一个</button>
+            <button id="clear-button" disabled>删除所有</button>
+            <button id="save-button" disabled>保存数据</button>
+            <button id="fit-50-button" disabled>50匝拟合</button>
+            <button id="fit-100-button" disabled>100匝拟合</button>
+        </div>
+        <div id="data-labels-container">
+            <div id="force-label" class="data-label">安培力: 0.000 N</div>
+            <div id="current-label" class="data-label">电流: 0.000 A</div>
+        </div>
+    </div>
+    <div id="chart-container" style="position: relative;">
+        <canvas id="myChart"></canvas>
+        <button id="auto-scale-button" style="position: absolute; left: 10px; bottom: 1px; font-size: 9px; padding: 2px;">自动缩放</button>
+    </div>
+
+    <script>
+        let device, characteristic, server;
+        let chart;
+        let isConnected = false;
+        const maxDataPoints = 100;
+        let data50Turns = [];
+        let data100Turns = [];
+        let currentDataset = data50Turns;
+        let isFitLine50Visible = false;
+        let isFitLine100Visible = false;
+
+        const connectButton = document.getElementById('connect-button');
+        const collectButton = document.getElementById('collect-button');
+        const deleteLastButton = document.getElementById('delete-last-button');
+        const clearButton = document.getElementById('clear-button');
+        const saveButton = document.getElementById('save-button');
+        const fit50Button = document.getElementById('fit-50-button');
+        const fit100Button = document.getElementById('fit-100-button');
+        const forceLabel = document.getElementById('force-label');
+        const currentLabel = document.getElementById('current-label');
+
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '50匝',
+                            data: data50Turns,
+                            borderColor: 'blue',
+                            backgroundColor: 'blue',
+                            showLine: false,
+                            pointRadius: 6,
+                        },
+                        {
+                            label: '100匝',
+                            data: data100Turns,
+                            borderColor: 'red',
+                            backgroundColor: 'red',
+                            showLine: false,
+                            pointRadius: 6,
+                        },
+                        {
+                            label: '50匝拟合线',
+                            data: [],
+                            borderColor: 'green',
+                            backgroundColor: 'green',
+                            showLine: true,
+                            fill: false,
+                            pointRadius: 0,
+                        },
+                        {
+                            label: '100匝拟合线',
+                            data: [],
+                            borderColor: 'black',
+                            backgroundColor: 'black',
+                            showLine: true,
+                            fill: false,
+                            pointRadius: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 2,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '电流 (A)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(3); },
+                                font: { size: 14 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '安培力 (N)',
+                                font: { size: 16 }
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { return value.toFixed(3); },
+                                font: { size: 14 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: { mode: 'index', intersect: false },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 30,
+                                padding: 20,
+                                font: { size: 14 },
+                                filter: function(legendItem, data) {
+                                    return true;
+                                },
+                                generateLabels: function(chart) {
+                                    const datasets = chart.data.datasets;
+                                    return datasets.map((dataset, i) => ({
+                                        text: dataset.label,
+                                        fillStyle: dataset.backgroundColor,
+                                        hidden: dataset.hidden,
+                                        lineCap: dataset.borderCapStyle,
+                                        lineDash: dataset.borderDash,
+                                        lineDashOffset: dataset.borderDashOffset,
+                                        lineJoin: dataset.borderJoinStyle,
+                                        lineWidth: dataset.borderWidth,
+                                        strokeStyle: dataset.borderColor,
+                                        pointStyle: dataset.pointStyle,
+                                        datasetIndex: i,
+                                        fontColor: (i === 0 && currentDataset === data50Turns) || (i === 1 && currentDataset === data100Turns) ? 
+                                                   'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.3)'
+                                    }));
+                                }
+                            },
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                if (index === 0 || index === 1) {
+                                    currentDataset = index === 0 ? data50Turns : data100Turns;
+                                    updateButtonStates();
+                                    this.chart.update();
+                                }
+                            }
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy',
+                            },
+                            pan: { enabled: true, mode: 'xy' }
+                        }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+        }
+
+        function updateChart() {
+            chart.data.datasets[0].data = data50Turns;
+            chart.data.datasets[1].data = data100Turns;
+            chart.update();
+        }
+
+        function linearRegression(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += data[i].x;
+                sumY += data[i].y;
+                sumXY += data[i].x * data[i].y;
+                sumXX += data[i].x * data[i].x;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            return { slope, intercept };
+        }
+
+        function createFitLine(data, slope, intercept) {
+            return [
+                {x: Math.min(...data.map(p => p.x)), y: slope * Math.min(...data.map(p => p.x)) + intercept},
+                {x: Math.max(...data.map(p => p.x)), y: slope * Math.max(...data.map(p => p.x)) + intercept}
+            ];
+        }
+
+        fit50Button.addEventListener('click', () => {
+            if (!isFitLine50Visible && data50Turns.length >= 2) {
+                const result = linearRegression(data50Turns);
+                const fitLine = createFitLine(data50Turns, result.slope, result.intercept);
+                chart.data.datasets[2].data = fitLine;
+                chart.data.datasets[2].hidden = false;
+                chart.data.datasets[2].label = `50匝拟合线: y = ${result.slope.toFixed(4)}x + ${result.intercept.toFixed(4)}`;
+                isFitLine50Visible = true;
+                fit50Button.textContent = '取消50匝拟合';
+                
+                // 更新图例样式
+                chart.options.plugins.legend.labels.generateLabels = function(chart) {
+                    const datasets = chart.data.datasets;
+                    return datasets.map((dataset, i) => ({
+                        text: dataset.label,
+                        fillStyle: dataset.backgroundColor,
+                        hidden: dataset.hidden,
+                        lineCap: dataset.borderCapStyle,
+                        lineDash: dataset.borderDash,
+                        lineDashOffset: dataset.borderDashOffset,
+                        lineJoin: dataset.borderJoinStyle,
+                        lineWidth: dataset.borderWidth,
+                        strokeStyle: dataset.borderColor,
+                        pointStyle: dataset.pointStyle,
+                        datasetIndex: i,
+                        fontColor: (i === 0 && currentDataset === data50Turns) || 
+                                   (i === 1 && currentDataset === data100Turns) || 
+                                   (i === 2 && isFitLine50Visible) || 
+                                   (i === 3 && isFitLine100Visible) ? 
+                                   'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.3)'
+                    }));
+                };
+            } else {
+                chart.data.datasets[2].data = [];
+                chart.data.datasets[2].label = '50匝拟合线';
+                isFitLine50Visible = false;
+                fit50Button.textContent = '50匝拟合';
+            }
+            chart.update();
+        });
+
+        fit100Button.addEventListener('click', () => {
+            if (!isFitLine100Visible && data100Turns.length >= 2) {
+                const result = linearRegression(data100Turns);
+                const fitLine = createFitLine(data100Turns, result.slope, result.intercept);
+                chart.data.datasets[3].data = fitLine;
+                chart.data.datasets[3].hidden = false;
+                chart.data.datasets[3].label = `100匝拟合线: y = ${result.slope.toFixed(4)}x + ${result.intercept.toFixed(4)}`;
+                isFitLine100Visible = true;
+                fit100Button.textContent = '取消100匝拟合';
+                
+                // 更新图例样式
+                chart.options.plugins.legend.labels.generateLabels = function(chart) {
+                    const datasets = chart.data.datasets;
+                    return datasets.map((dataset, i) => ({
+                        text: dataset.label,
+                        fillStyle: dataset.backgroundColor,
+                        hidden: dataset.hidden,
+                        lineCap: dataset.borderCapStyle,
+                        lineDash: dataset.borderDash,
+                        lineDashOffset: dataset.borderDashOffset,
+                        lineJoin: dataset.borderJoinStyle,
+                        lineWidth: dataset.borderWidth,
+                        strokeStyle: dataset.borderColor,
+                        pointStyle: dataset.pointStyle,
+                        datasetIndex: i,
+                        fontColor: (i === 0 && currentDataset === data50Turns) || 
+                                   (i === 1 && currentDataset === data100Turns) || 
+                                   (i === 2 && isFitLine50Visible) || 
+                                   (i === 3 && isFitLine100Visible) ? 
+                                   'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.3)'
+                    }));
+                };
+            } else {
+                chart.data.datasets[3].data = [];
+                chart.data.datasets[3].label = '100匝拟合线';
+                isFitLine100Visible = false;
+                fit100Button.textContent = '100匝拟合';
+            }
+            chart.update();
+        });
+
+        async function connectDevice() {
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                isConnected = true;
+                connectButton.textContent = '断开连接';
+                updateButtonStates();
+                initChart();
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+            } catch (error) {
+                console.error('连接错误:', error);
+                await disconnectDevice();
+            }
+        }
+
+        async function disconnectDevice() {
+            if (device && device.gatt.connected) {
+                await device.gatt.disconnect();
+            }
+            onDisconnected();
+        }
+
+        function onDisconnected() {
+            isConnected = false;
+            connectButton.textContent = '扫描并连接';
+            updateButtonStates();
+            device = null;
+            server = null;
+            characteristic = null;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            data50Turns = [];
+            data100Turns = [];
+            currentDataset = data50Turns;
+            isFitLine50Visible = false;
+            isFitLine100Visible = false;
+        }
+
+        function updateButtonStates() {
+            collectButton.disabled = !isConnected;
+            deleteLastButton.disabled = !isConnected || currentDataset.length === 0;
+            clearButton.disabled = !isConnected || (data50Turns.length === 0 && data100Turns.length === 0);
+            saveButton.disabled = !isConnected || (data50Turns.length === 0 && data100Turns.length === 0);
+            fit50Button.disabled = !isConnected || data50Turns.length < 2;
+            fit100Button.disabled = !isConnected || data100Turns.length < 2;
+        }
+
+        connectButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                await connectDevice();
+            } else {
+                await disconnectDevice();
+            }
+        });
+
+        collectButton.addEventListener('click', async () => {
+            try {
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleData);
+            } catch (error) {
+                console.error('采集数据错误:', error);
+            }
+        });
+
+        function handleData(event) {
+            const value = event.target.value;
+            const dataView = new DataView(value.buffer);
+            
+            const force = dataView.getFloat32(0, true);
+            const current = dataView.getFloat32(4, true);
+
+            currentDataset.push({x: current, y: force});
+            updateChart();
+            forceLabel.textContent = `安培力: ${force.toFixed(3)} N`;
+            currentLabel.textContent = `电流: ${current.toFixed(3)} A`;
+            updateButtonStates();
+
+            characteristic.stopNotifications();
+        }
+
+        deleteLastButton.addEventListener('click', () => {
+            currentDataset.pop();
+            updateChart();
+            updateButtonStates();
+        });
+
+        clearButton.addEventListener('click', () => {
+            data50Turns = [];
+            data100Turns = [];
+            currentDataset = data50Turns;
+            isFitLine50Visible = false;
+            isFitLine100Visible = false;
+            updateChart();
+            forceLabel.textContent = '安培力: 0.000 N';
+            currentLabel.textContent = '电流: 0.000 A';
+            updateButtonStates();
+        });
+
+        saveButton.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "电流 (A),安培力 (N),匝数\n";
+
+            data50Turns.forEach(point => {
+                csvContent += `${point.x},${point.y},50\n`;
+            });
+
+            data100Turns.forEach(point => {
+                csvContent += `${point.x},${point.y},100\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "ampere_force_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        const autoScaleButton = document.getElementById('auto-scale-button');
+
+        autoScaleButton.addEventListener('click', () => {
+            const allData = [...data50Turns, ...data100Turns];
+            if (allData.length > 0) {
+                const xValues = allData.map(point => point.x);
+                const yValues = allData.map(point => point.y);
+                
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+                
+                const xPadding = (xMax - xMin) * 0.1;
+                const yPadding = (yMax - yMin) * 0.1;
+                
+                chart.options.scales.x.min = xMin - xPadding;
+                chart.options.scales.x.max = xMax + xPadding;
+                chart.options.scales.y.min = yMin - yPadding;
+                chart.options.scales.y.max = yMax + yPadding;
+                
+                chart.update();
+            }
+        });
+
+        updateButtonStates();
+    </script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安培力实验3</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 5px; background-color: #f0f8ff; }
+        .title-container { display: flex; justify-content: center; align-items: baseline; margin-bottom: 5px; }
+        h1 { margin: 0; color: #1e07f3; }
+        .designer { font-size: 20px; color: #010002f8; margin-left: 20px; font-family: 'Brush Script MT', cursive; font-style: italic; }
+        #controls-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            margin-bottom: 5px;
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            height: 505px; 
+            margin: 0 auto;
+        }
+        button { margin: 3px; padding: 10px 15px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>安培力实验3</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div id="controls-container">
+        <button id="connect-button">扫描并连接</button>
+        <button id="collect-button" disabled>开始采集</button>
+        <button id="clear-button" disabled>删除数据</button>
+        <button id="save-button" disabled>保存数据</button>
+    </div>
+    <div id="chart-container" style="position: relative;">
+        <canvas id="myChart"></canvas>
+        <button id="auto-scale-button" style="position: absolute; left: 10px; bottom: 1px; font-size: 9px; padding: 2px;">自动缩放</button>
+    </div>
+
+    <script>
+        let device, characteristic, server;
+        let chart;
+        let isConnected = false;
+        let isCollecting = false;
+        let dataPoints = [];
+        const maxDataPoints = 300; // 新增：设置最大数据点数量
+
+        const connectButton = document.getElementById('connect-button');
+        const collectButton = document.getElementById('collect-button');
+        const clearButton = document.getElementById('clear-button');
+        const saveButton = document.getElementById('save-button');
+
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: '安培力 (N)',
+                            data: [],
+                            borderColor: 'red',
+                            backgroundColor: 'red',
+                            yAxisID: 'y',
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: '磁感应强度 (mT)',
+                            data: [],
+                            borderColor: 'blue',
+                            backgroundColor: 'blue',
+                            yAxisID: 'y1',
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '时间 (s)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(2); },
+                                font: { size: 14 }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '安培力 (N)',
+                                font: { size: 16 },
+                                color: 'red'  // 修改：标题颜色改为红色
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(3); },
+                                font: { size: 14 },
+                                color: 'red'  // 修改：刻度颜色改为红色
+                            },
+                            grid: {
+                                color: 'rgba(255, 0, 0, 0.1)'  // 修改：网格线颜色改为淡红色
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '磁感应强度 (mT)',
+                                font: { size: 16 },
+                                color: 'blue'  // 修改：标题颜色改为蓝色
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(2); },
+                                font: { size: 14 },
+                                color: 'blue'  // 修改：刻度颜色改为蓝色
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'rgba(0, 0, 255, 0.1)'  // 修改：网格线颜色改为淡蓝色
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy',
+                            },
+                            pan: { enabled: true, mode: 'xy' }
+                        }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+        }
+
+        function updateChart() {
+            // 修改：限制数据点数量并更新图表
+            if (dataPoints.length > maxDataPoints) {
+                dataPoints = dataPoints.slice(-maxDataPoints);
+            }
+
+            chart.data.datasets[0].data = dataPoints.map(point => ({x: point.time, y: point.force}));
+            chart.data.datasets[1].data = dataPoints.map(point => ({x: point.time, y: point.magneticField}));
+
+            // 更新 x 轴范围
+            const times = dataPoints.map(point => point.time);
+            const xMin = Math.min(...times);
+            const xMax = Math.max(...times);
+            chart.options.scales.x.min = xMin;
+            chart.options.scales.x.max = xMax;
+
+            chart.update();
+        }
+
+        async function connectDevice() {
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                isConnected = true;
+                connectButton.textContent = '断开连接';
+                updateButtonStates();
+                initChart();
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+            } catch (error) {
+                console.error('连接错误:', error);
+                await disconnectDevice();
+            }
+        }
+
+        async function disconnectDevice() {
+            if (device && device.gatt.connected) {
+                await device.gatt.disconnect();
+            }
+            onDisconnected();
+        }
+
+        function onDisconnected() {
+            isConnected = false;
+            isCollecting = false;
+            connectButton.textContent = '扫描并连接';
+            collectButton.textContent = '开始采集';
+            updateButtonStates();
+            device = null;
+            server = null;
+            characteristic = null;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            dataPoints = [];
+        }
+
+        function updateButtonStates() {
+            collectButton.disabled = !isConnected;
+            clearButton.disabled = !isConnected || dataPoints.length === 0;
+            saveButton.disabled = !isConnected || dataPoints.length === 0;
+        }
+
+        connectButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                await connectDevice();
+            } else {
+                await disconnectDevice();
+            }
+        });
+
+        collectButton.addEventListener('click', async () => {
+            if (!isCollecting) {
+                isCollecting = true;
+                collectButton.textContent = '停止采集';
+                await startDataCollection();
+            } else {
+                isCollecting = false;
+                collectButton.textContent = '开始采集';
+                await stopDataCollection();
+            }
+        });
+
+        async function startDataCollection() {
+            try {
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleData);
+            } catch (error) {
+                console.error('采集数据错误:', error);
+            }
+        }
+
+        async function stopDataCollection() {
+            try {
+                await characteristic.stopNotifications();
+                characteristic.removeEventListener('characteristicvaluechanged', handleData);
+            } catch (error) {
+                console.error('停止采集数据错误:', error);
+            }
+        }
+
+        function handleData(event) {
+            const value = event.target.value;
+            const dataView = new DataView(value.buffer);
+            
+            const force = dataView.getFloat32(0, true);
+            const magneticField = dataView.getFloat32(4, true);
+            const time = dataView.getFloat32(8, true);
+
+            dataPoints.push({time, force, magneticField});
+            updateChart();
+            updateButtonStates();
+        }
+
+        clearButton.addEventListener('click', () => {
+            dataPoints = [];
+            updateChart();
+            updateButtonStates();
+        });
+
+        saveButton.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "时间 (s),安培力 (N),磁感应强度 (mT)\n";
+
+            dataPoints.forEach(point => {
+                csvContent += `${point.time},${point.force},${point.magneticField}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "ampere_force_magnetic_field_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        const autoScaleButton = document.getElementById('auto-scale-button');
+
+        autoScaleButton.addEventListener('click', () => {
+            if (dataPoints.length > 0) {
+                const times = dataPoints.map(point => point.time);
+                const forces = dataPoints.map(point => point.force);
+                const magneticFields = dataPoints.map(point => point.magneticField);
+                
+                const xMin = Math.min(...times);
+                const xMax = Math.max(...times);
+                const yMin = Math.min(...forces);
+                const yMax = Math.max(...forces);
+                const y1Min = Math.min(...magneticFields);
+                const y1Max = Math.max(...magneticFields);
+                
+                const xPadding = (xMax - xMin) * 0.1;
+                const yPadding = (yMax - yMin) * 0.1;
+                const y1Padding = (y1Max - y1Min) * 0.1;
+                
+                chart.options.scales.x.min = xMin - xPadding;
+                chart.options.scales.x.max = xMax + xPadding;
+                chart.options.scales.y.min = yMin - yPadding;
+                chart.options.scales.y.max = yMax + yPadding;
+                chart.options.scales.y1.min = y1Min - y1Padding;
+                chart.options.scales.y1.max = y1Max + y1Padding;
+                
+                chart.update();
+            }
+        });
+
+        updateButtonStates();
+    </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安培力实验2</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 5px; background-color: #f0f8ff; }
+        .title-container { display: flex; justify-content: center; align-items: baseline; margin-bottom: 5px; }
+        h1 { margin: 0; color: #1e07f3; }
+        .designer { font-size: 20px; color: #010002f8; margin-left: 20px; font-family: 'Brush Script MT', cursive; font-style: italic; }
+        #controls-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            margin-bottom: 5px;
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            height: 430px; 
+            margin: 0 auto;
+        }
+        button { margin: 3px; padding: 10px 15px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #45a049; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            font-size: 16px; /* 增加表格整体字体大小 */
+        }
+        th, td { 
+            border: 1px solid black; 
+            padding: 5px; 
+            text-align: center; 
+        }
+        .data-cell { 
+            color: rgb(1, 1, 94); 
+            font-weight: bold; /* 将数据单元格字体加粗 */
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>安培力实验2</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div id="controls-container">
+        <button id="connect-button">扫描并连接</button>
+        <button id="collect-button" disabled>采集数据</button>
+        <button id="delete-last-button" disabled>删除上一个</button>
+        <button id="clear-button" disabled>删除所有</button>
+        <button id="save-button" disabled>保存数据</button>
+        <button id="fit-button" disabled>正弦拟合</button>
+    </div>
+    <div id="chart-container" style="position: relative;">
+        <canvas id="myChart"></canvas>
+        <button id="auto-scale-button" style="position: absolute; left: 10px; bottom: 1px; font-size: 9px; padding: 2px;">自动缩放</button>
+    </div>
+    <table id="data-table">
+        <tr>
+            <th>角度/°</th>
+            <th>0</th><th>30</th><th>60</th><th>90</th><th>120</th><th>150</th><th>180</th>
+            <th>210</th><th>240</th><th>270</th><th>300</th><th>330</th><th>360</th>
+        </tr>
+        <tr>
+            <th>安培力/N</th>
+            <td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td>
+            <td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td>
+            <td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td><td class="data-cell"></td>
+            <td class="data-cell"></td>
+        </tr>
+    </table>
+
+    <script>
+        let device, characteristic, server;
+        let chart;
+        let isConnected = false;
+        const maxDataPoints = 13;
+        let dataPoints = [];
+        let isFitLineVisible = false;
+
+        const connectButton = document.getElementById('connect-button');
+        const collectButton = document.getElementById('collect-button');
+        const deleteLastButton = document.getElementById('delete-last-button');
+        const clearButton = document.getElementById('clear-button');
+        const saveButton = document.getElementById('save-button');
+        const fitButton = document.getElementById('fit-button');
+
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '实验数据',
+                            data: dataPoints,
+                            borderColor: 'red',
+                            backgroundColor: 'red',
+                            pointRadius: 6,
+                        },
+                        {
+                            label: '正弦拟合',
+                            data: [],
+                            borderColor: 'green',
+                            backgroundColor: 'green',
+                            showLine: true,
+                            fill: false,
+                            pointRadius: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '角度 (°)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(0); },
+                                font: { size: 14 }
+                            },
+                            min: 0,
+                            max: 360
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '安培力 (N)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: function(value) { return value.toFixed(3); },
+                                font: { size: 14 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy',
+                            },
+                            pan: { enabled: true, mode: 'xy' }
+                        }
+                    },
+                }
+            });
+        }
+
+        function updateChart() {
+            chart.data.datasets[0].data = dataPoints;
+            chart.update();
+        }
+
+        function updateTable() {
+            const cells = document.querySelectorAll('.data-cell');
+            cells.forEach((cell, index) => {
+                if (index < dataPoints.length) {
+                    cell.textContent = dataPoints[index].y.toFixed(3);
+                } else {
+                    cell.textContent = '';
+                }
+            });
+        }
+
+        async function connectDevice() {
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                isConnected = true;
+                connectButton.textContent = '断开连接';
+                updateButtonStates();
+                initChart();
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+            } catch (error) {
+                console.error('连接错误:', error);
+                await disconnectDevice();
+            }
+        }
+
+        async function disconnectDevice() {
+            if (device && device.gatt.connected) {
+                await device.gatt.disconnect();
+            }
+            onDisconnected();
+        }
+
+        function onDisconnected() {
+            isConnected = false;
+            connectButton.textContent = '扫描并连接';
+            updateButtonStates();
+            device = null;
+            server = null;
+            characteristic = null;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            dataPoints = [];
+            isFitLineVisible = false;
+            updateTable();
+        }
+
+        function updateButtonStates() {
+            collectButton.disabled = !isConnected;
+            deleteLastButton.disabled = !isConnected || dataPoints.length === 0;
+            clearButton.disabled = !isConnected || dataPoints.length === 0;
+            saveButton.disabled = !isConnected || dataPoints.length === 0;
+            fitButton.disabled = !isConnected || dataPoints.length < 2;
+        }
+
+        connectButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                await connectDevice();
+            } else {
+                await disconnectDevice();
+            }
+        });
+
+        collectButton.addEventListener('click', async () => {
+            try {
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleData);
+            } catch (error) {
+                console.error('采集数据错误:', error);
+            }
+        });
+
+        function handleData(event) {
+            const value = event.target.value;
+            const dataView = new DataView(value.buffer);
+            
+            const force = dataView.getFloat32(0, true);
+            const angle = dataPoints.length * 30;  // 假设每次采集角度增加30度
+
+            if (dataPoints.length < maxDataPoints) {
+                dataPoints.push({x: angle, y: force});
+                updateChart();
+                updateTable();
+                updateButtonStates();
+            }
+
+            characteristic.stopNotifications();
+        }
+
+        deleteLastButton.addEventListener('click', () => {
+            dataPoints.pop();
+            updateChart();
+            updateTable();
+            updateButtonStates();
+        });
+
+        clearButton.addEventListener('click', () => {
+            dataPoints = [];
+            isFitLineVisible = false;
+            updateChart();
+            updateTable();
+            updateButtonStates();
+        });
+
+        saveButton.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "角度 (°),安培力 (N)\n";
+
+            dataPoints.forEach(point => {
+                csvContent += `${point.x},${point.y}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "ampere_force_angle_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        fitButton.addEventListener('click', () => {
+            if (!isFitLineVisible && dataPoints.length >= 2) {
+                const result = sineFit(dataPoints);
+                const fitLine = createFitLine(result.A, result.B, result.C, result.D);
+                chart.data.datasets[1].data = fitLine;
+                chart.data.datasets[1].hidden = false;
+                chart.data.datasets[1].label = `正弦拟合: y = ${result.A.toFixed(3)} * sin(${result.B.toFixed(1)}x + ${result.C.toFixed(1)}) + ${result.D.toFixed(3)}`;
+                isFitLineVisible = true;
+                fitButton.textContent = '取消拟合';
+            } else {
+                chart.data.datasets[1].data = [];
+                chart.data.datasets[1].label = '正弦拟合';
+                isFitLineVisible = false;
+                fitButton.textContent = '正弦拟合';
+            }
+            chart.update();
+        });
+
+        function sineFit(data) {
+            // 这里应该实现正弦拟合算法
+            // 计算A和D的值
+            //A 振幅计算方法是取数据点 y 值的最大值和最小值之差的一半
+            //D 垂直偏移计算方法是取数据点 y 值的最大值和最小值的平均值
+            const A = (Math.max(...data.map(point => point.y)) - Math.min(...data.map(point => point.y))) / 2;
+            const D = (Math.max(...data.map(point => point.y)) + Math.min(...data.map(point => point.y))) / 2;
+            
+            // 返回计算得到的A和D，以及固定的B和C值，B为1，周期为360° ，c为0，水平偏移为0
+            return { A: A, B: 1, C: 0, D: D };
+        }
+            // ABCD绘制拟合图
+        function createFitLine(A, B, C, D) {
+            const fitLine = [];
+            for (let x = 0; x <= 360; x += 1) {
+                fitLine.push({x: x, y: A * Math.sin(B * x * Math.PI / 180 + C) + D});
+            }
+            return fitLine;
+        }
+
+        updateButtonStates();
+
+        const autoScaleButton = document.getElementById('auto-scale-button');
+
+        autoScaleButton.addEventListener('click', () => {
+            if (dataPoints.length > 0) {
+                const xValues = dataPoints.map(point => point.x);
+                const yValues = dataPoints.map(point => point.y);
+                
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+                
+                const xPadding = (xMax - xMin) * 0.1;
+                const yPadding = (yMax - yMin) * 0.1;
+                
+                chart.options.scales.x.min = xMin - xPadding;
+                chart.options.scales.x.max = xMax + xPadding;
+                chart.options.scales.y.min = yMin - yPadding;
+                chart.options.scales.y.max = yMax + yPadding;
+                
+                chart.update();
+            }
+        });
+    </script>
+</body>
+</html>

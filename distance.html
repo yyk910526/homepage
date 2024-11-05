@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无线位移传感器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 5px; background-color: #f0f8ff; }
+        .title-container { display: flex; justify-content: center; align-items: baseline; margin-bottom: 5px; }
+        h1 { margin: 0; color: #272626; }
+        .designer { font-size: 20px; color: #2401e9; margin-left: 20px; font-family: 'Brush Script MT', cursive; font-style: italic; }
+        #controls-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            margin-bottom: 5px; /* 减少底部边距 */
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            height: 520px; 
+            margin: -20px auto 0; /* 使用负的顶部边距使图表上移 */
+        }
+        button { margin: 5px; padding: 10px 15px; font-size: 17px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #45a049; }
+        #weight-label { 
+            font-size: 30px; 
+            font-weight: bold; 
+            color: #1E90FF; 
+            margin-left: 30px; 
+            width: 200px; /* 给一个固定宽�� */
+            text-align: left; /* 左对齐文本 */
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>无线位移传感器</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div id="controls-container">
+        <button id="connect-button">扫描并连接</button>
+        <button id="start-button" disabled>开始采集</button>
+        <button id="stop-button" disabled>停止采集</button>
+        <button id="clear-button" disabled>删除数据</button>
+        <button id="save-button" disabled>保存数据</button>
+        <div id="weight-label">距离: 0.0 cm</div>
+    </div>
+    <div id="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        let device, characteristic, server;
+        let chart;
+        let isCollecting = false;
+        let isConnected = false;
+        const maxDataPoints = 450; // 点数太多页面会卡顿
+        let timeData = [];
+        let distanceData = [];
+
+        const connectButton = document.getElementById('connect-button');
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const clearButton = document.getElementById('clear-button');
+        const distanceLabel = document.getElementById('weight-label');
+        const saveButton = document.getElementById('save-button');
+
+        // 添加中值滤波相关变量
+        const medianFilterSize = 3;
+        let medianBuffer = [];
+
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '距离 (cm)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 2,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '时间 (s)',
+                                font: {
+                                    size: 16 // 增大 x 轴标题字体
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1);
+                                },
+                                font: {
+                                    size: 14 // 增大 x 轴刻度字体
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '距离 (cm)',
+                                font: {
+                                    size: 16 // 增大 y 轴标题字体
+                                }
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1);  // 显示小数点后面1位
+                                },
+                                font: {
+                                    size: 14 // 增大 y 轴刻度字体
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top', // 将图例放在图表上方
+                            align: 'end',    // 将图例右对齐
+                            labels: {
+                                boxWidth: 30,  // 减小图例标记的宽度
+                                padding: 20,   // 减小图例项之间的间距
+                                font: {
+                                    size: 14   // 减小图例字体大小
+                                }
+                            }
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'xy',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+        }
+
+        // 更新图表数据
+        function updateChart(time, distance) {
+            timeData.push(time);
+            distanceData.push(distance);
+
+            if (timeData.length > maxDataPoints) {
+                timeData.shift();
+                distanceData.shift();
+            }
+
+            chart.data.datasets[0].data = distanceData.map((distance, index) => ({x: timeData[index], y: distance}));
+
+            // 更新 x 轴范围
+            const xMin = Math.min(...timeData);
+            const xMax = Math.max(...timeData);
+            chart.options.scales.x.min = xMin;
+            chart.options.scales.x.max = xMax;
+
+            // 更新 y 轴范围
+            const yMin = Math.min(...distanceData);
+            const yMax = Math.max(...distanceData);
+            chart.options.scales.y.min = yMin > 0 ? 0 : yMin;
+            chart.options.scales.y.max = yMax;
+
+            chart.update();
+
+            // 更新重量标签
+            distanceLabel.textContent = `距离: ${distance.toFixed(1)} cm`;// 显示小数点后面1位
+
+            // 更新保存按钮状态
+            saveButton.disabled = false;
+        }
+
+        // 添加中值滤波函数
+        function applyMedianFilter(newValue) {
+            medianBuffer.push(newValue);
+            if (medianBuffer.length > medianFilterSize) {
+                medianBuffer.shift();
+            }
+            const sortedBuffer = [...medianBuffer].sort((a, b) => a - b);
+            return sortedBuffer[Math.floor(sortedBuffer.length / 2)];
+        }
+
+        // 修改连接/断开连接按钮的事件监听器
+        connectButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                await connectDevice();
+            } else {
+                await disconnectDevice();
+            }
+        });
+
+        // 修改连接设备函数
+        async function connectDevice() {
+            try {
+                await disconnectDevice(); // 确保之前的连接已经断开
+
+                if ('bluetooth' in navigator && 'getAvailability' in navigator.bluetooth) {
+                    const isBluetoothAvailable = await navigator.bluetooth.getAvailability();
+                    if (!isBluetoothAvailable) {
+                        throw new Error('蓝牙不可用');
+                    }
+                }
+
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleData);
+
+                isConnected = true;
+                updateButtonStates();
+                initChart();
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+                connectButton.textContent = '断开连接';
+            } catch (error) {
+                console.error('连接错误:', error);
+                await disconnectDevice();
+            }
+        }
+
+        // 修改处理接收到的数据函数
+        function handleData(event) {
+            const value = event.target.value;
+            const dataView = new DataView(value.buffer);
+            
+            const distance = dataView.getFloat32(0, true);
+            const time = dataView.getFloat32(4, true);
+
+            console.log("Raw data received:", time, distance);
+
+            if (!isNaN(time) && !isNaN(distance)) {
+                if (isCollecting) {
+                    // 应用中值滤波
+                    const filteredDistance = applyMedianFilter(distance);
+                    updateChart(time, filteredDistance);
+                    console.log(`接收到数据 - 时间: ${time.toFixed(1)}, 原始距离: ${distance.toFixed(1)}, 滤波后距离: ${filteredDistance.toFixed(1)}`);
+                }
+            } else {
+                console.log('数据格式错误：无法解析为数字');
+                console.log('无法解析的数据:', value);
+            }
+        }
+
+        // 开始采集数据
+        startButton.addEventListener('click', () => {
+            isCollecting = true;
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        });
+
+        // 停止采集数据
+        stopButton.addEventListener('click', () => {
+            isCollecting = false;
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        });
+
+        // 清除数据
+        clearButton.addEventListener('click', () => {
+            timeData = [];
+            distanceData = [];
+            medianBuffer = []; // 清空中值滤波缓冲区
+            chart.data.datasets[0].data = [];
+            chart.update();
+            distanceLabel.textContent = '距离: 0.0 cm';
+            updateButtonStates(); // 更新按钮状态
+        });
+
+        // 添加保存数据功能
+        saveButton.addEventListener('click', saveData);
+
+        function saveData() {
+            if (timeData.length === 0 || distanceData.length === 0) {
+                alert('没有可保存的数据');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "时间 (s), 距离 (cm)\n";
+
+            for (let i = 0; i < timeData.length; i++) {
+                csvContent += `${timeData[i]},${distanceData[i]}\n`;
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "distance_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 修改断开设备函数
+        async function disconnectDevice() {
+            if (device) {
+                if (device.gatt.connected) {
+                    try {
+                        await device.gatt.disconnect();
+                    } catch (error) {
+                        console.error('断开连接错误:', error);
+                    }
+                }
+                device.removeEventListener('gattserverdisconnected', onDisconnected);
+            }
+            if (characteristic) {
+                try {
+                    await characteristic.stopNotifications();
+                } catch (error) {
+                    console.error('停止通知错误:', error);
+                }
+            }
+            onDisconnected();
+        }
+
+        // 修改断开连接处理函数
+        function onDisconnected() {
+            console.log('设备已断开连接');
+            isConnected = false;
+            updateButtonStates();
+            device = null;
+            server = null;
+            characteristic = null;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            timeData = [];
+            distanceData = [];
+            connectButton.textContent = '扫描并连接';
+        }
+
+        // 修改更新按钮状态函数
+        function updateButtonStates() {
+            startButton.disabled = !isConnected;
+            stopButton.disabled = !isConnected || !isCollecting;
+            clearButton.disabled = !isConnected;
+            saveButton.disabled = !isConnected || timeData.length === 0;
+            isCollecting = false;
+        }
+
+        // 移除全局的 disconnected 事件监听器，因为我们现在使用设备特定的监听器
+        // navigator.bluetooth.removeEventListener('disconnected', ...);
+    </script>
+</body>
+</html>

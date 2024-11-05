@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自由落体实验</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 5px; 
+            background-color: #f0f8ff; 
+        }
+        .title-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: baseline; 
+            margin-bottom: 5px; 
+        }
+        h1 { margin: 0; color: #272626; }
+        .designer { 
+            font-size: 20px; 
+            color: #2401e9; 
+            margin-left: 20px; 
+            font-family: 'Brush Script MT', cursive; 
+            font-style: italic; 
+        }
+        #controls-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            margin-bottom: 5px;
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            height: 520px; 
+            margin: -20px auto 0;
+            position: relative;
+        }
+        button { 
+            margin: 5px; 
+            padding: 10px 15px; 
+            font-size: 17px; 
+            background-color: #4CAF50; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: background-color 0.3s; 
+        }
+        button:disabled { 
+            background-color: #cccccc; 
+            cursor: not-allowed; 
+        }
+        button:hover:not(:disabled) { 
+            background-color: #45a049; 
+        }
+        #auto-scale-button {
+            position: absolute;
+            left: 10px;
+            bottom: 1px;
+            font-size: 9px;
+            padding: 2px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>自由落体实验</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div id="controls-container">
+        <button id="connect-button">扫描并连接</button>
+        <button id="start-button" disabled>开始采集</button>
+        <button id="clear-button" disabled>删除数据</button>
+        <button id="save-button" disabled>保存数据</button>
+        <button id="fit-button" disabled>线性拟合</button>
+    </div>
+    <div id="chart-container">
+        <canvas id="myChart"></canvas>
+        <button id="auto-scale-button">自动缩放</button>
+    </div>
+
+    <script>
+        let device, characteristic, server;
+        let chart;
+        let isConnected = false;
+        let isCollecting = false;
+        let isFitLineVisible = false;
+        let timeData = [];
+        let velocityData = [];
+
+        const connectButton = document.getElementById('connect-button');
+        const startButton = document.getElementById('start-button');
+        const clearButton = document.getElementById('clear-button');
+        const saveButton = document.getElementById('save-button');
+        const fitButton = document.getElementById('fit-button');
+
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '速度-时间',
+                            data: [],
+                            borderColor: 'red',
+                            backgroundColor: 'red',
+                            showLine: false,
+                            pointRadius: 6,
+                        },
+                        {
+                            label: '拟合线',
+                            data: [],
+                            borderColor: 'green',
+                            backgroundColor: 'green',
+                            showLine: true,
+                            fill: false,
+                            pointRadius: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '时间 (s)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: value => value.toFixed(2),
+                                font: { size: 14 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '速度 (m/s)',
+                                font: { size: 16 }
+                            },
+                            ticks: {
+                                callback: value => value.toFixed(2),
+                                font: { size: 14 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                font: {
+                                    size: 16
+                                },
+                                padding: 20
+                            }
+                        }
+                    },
+                    animation: false,
+                    responsiveAnimationDuration: 0,
+                    elements: {
+                        point: {
+                            radius: 6
+                        }
+                    },
+                    spanGaps: true,
+                    transitions: {
+                        active: {
+                            animation: {
+                                duration: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function linearRegression(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += data[i].x;
+                sumY += data[i].y;
+                sumXY += data[i].x * data[i].y;
+                sumXX += data[i].x * data[i].x;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            return { slope, intercept };
+        }
+
+        function createFitLine(data, slope, intercept) {
+            return [
+                {x: Math.min(...data.map(p => p.x)), y: slope * Math.min(...data.map(p => p.x)) + intercept},
+                {x: Math.max(...data.map(p => p.x)), y: slope * Math.max(...data.map(p => p.x)) + intercept}
+            ];
+        }
+
+        fitButton.addEventListener('click', () => {
+            if (!isFitLineVisible && timeData.length >= 2) {
+                const data = timeData.map((t, i) => ({x: t, y: velocityData[i]}));
+                const result = linearRegression(data);
+                const fitLine = createFitLine(data, result.slope, result.intercept);
+                chart.data.datasets[1].data = fitLine;
+                chart.data.datasets[1].label = `拟合线:  v = ${result.slope.toFixed(2)}t + ${result.intercept.toFixed(2)}`;
+                isFitLineVisible = true;
+                fitButton.textContent = '取消拟合';
+            } else {
+                chart.data.datasets[1].data = [];
+                chart.data.datasets[1].label = '拟合线';
+                isFitLineVisible = false;
+                fitButton.textContent = '线性拟合';
+            }
+            chart.update();
+        });
+
+        async function connectDevice() {
+            try {
+                if (isConnected) {
+                    await disconnectDevice();
+                }
+
+                if ('bluetooth' in navigator && 'getAvailability' in navigator.bluetooth) {
+                    const isBluetoothAvailable = await navigator.bluetooth.getAvailability();
+                    if (!isBluetoothAvailable) {
+                        throw new Error('蓝牙不可用');
+                    }
+                }
+
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                isConnected = true;
+                connectButton.textContent = '断开连接';
+                updateButtonStates();
+                
+                if (!chart) {
+                    initChart();
+                }
+
+            } catch (error) {
+                console.error('连接错误:', error);
+                await disconnectDevice();
+                alert('连接失败，请重试');
+            }
+        }
+
+        function handleData(event) {
+            const value = event.target.value;
+            const dataView = new DataView(value.buffer);
+            
+            const velocity = dataView.getFloat32(0, true);
+            const time = dataView.getFloat32(4, true);
+
+            if (!isNaN(time) && !isNaN(velocity) && isCollecting) {
+                timeData.push(time);
+                velocityData.push(velocity);
+                requestAnimationFrame(() => {
+                    updateChart();
+                });
+            }
+        }
+
+        function updateChart() {
+            const newData = timeData.map((t, i) => ({
+                x: t,
+                y: velocityData[i]
+            }));
+            chart.data.datasets[0].data = newData;
+
+            if (timeData.length > 0) {
+                const xMin = Math.min(...timeData);
+                const xMax = Math.max(...timeData);
+                const yMin = Math.min(...velocityData);
+                const yMax = Math.max(...velocityData);
+                
+                const xPadding = Math.max((xMax - xMin) * 0.1, 0.1);
+            // 获取当前数据的范围
+            const xMin = Math.min(...timeData);
+            const xMax = Math.max(...timeData);
+            const yMin = Math.min(...velocityData);
+            const yMax = Math.max(...velocityData);
+            
+            // 添加一些边距使图表更美观
+            const xPadding = (xMax - xMin) * 0.1;
+            const yPadding = (yMax - yMin) * 0.1;
+            
+            // 直接更新坐标轴范围
+            chart.options.scales.x.min = xMin - xPadding;
+            chart.options.scales.x.max = xMax + xPadding;
+            chart.options.scales.y.min = yMin - yPadding;
+            chart.options.scales.y.max = yMax + yPadding;
+
+            // 更新图表，不使用动画
+            chart.update('none');
+            
+            // 更新按钮状态
+            clearButton.disabled = false;
+            saveButton.disabled = false;
+            fitButton.disabled = timeData.length < 2;
+        }
+
+        startButton.addEventListener('click', async () => {
+            isCollecting = true;
+            await characteristic.startNotifications();
+            characteristic.addEventListener('characteristicvaluechanged', handleData);
+            startButton.disabled = true;
+        });
+
+        clearButton.addEventListener('click', () => {
+            timeData = [];
+            velocityData = [];
+            chart.data.datasets[0].data = [];
+            chart.data.datasets[1].data = [];
+            isFitLineVisible = false;
+            fitButton.textContent = '线性拟合';
+            isCollecting = false;
+            startButton.disabled = false;
+            chart.update();
+            updateButtonStates();
+        });
+
+        function saveData() {
+            if (timeData.length === 0) {
+                alert('没有可保存的数据');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "时间 (s),速度 (m/s)\n";
+
+            for (let i = 0; i < timeData.length; i++) {
+                csvContent += `${timeData[i]},${velocityData[i]}\n`;
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "freefall_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function disconnectDevice() {
+            try {
+                if (characteristic) {
+                    await characteristic.stopNotifications();
+                }
+                if (device && device.gatt.connected) {
+                    await device.gatt.disconnect();
+                }
+            } catch (error) {
+                console.error('断开连接错误:', error);
+            } finally {
+                onDisconnected();
+            }
+        }
+
+        function onDisconnected() {
+            console.log('设备已断开连接');
+            
+            isConnected = false;
+            isCollecting = false;
+            
+            device = null;
+            server = null;
+            characteristic = null;
+            
+            timeData = [];
+            velocityData = [];
+            
+            connectButton.textContent = '扫描并连接';
+            
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            
+            initChart();
+            
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            startButton.disabled = !isConnected || isCollecting;
+            clearButton.disabled = !isConnected || timeData.length === 0;
+            saveButton.disabled = !isConnected || timeData.length === 0;
+            fitButton.disabled = !isConnected || timeData.length < 2;
+        }
+
+        connectButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                await connectDevice();
+            } else {
+                await disconnectDevice();
+            }
+        });
+
+        saveButton.addEventListener('click', saveData);
+
+        document.getElementById('auto-scale-button').addEventListener('click', () => {
+            if (timeData.length > 0) {
+                const xMin = Math.min(...timeData);
+                const xMax = Math.max(...timeData);
+                const yMin = Math.min(...velocityData);
+                const yMax = Math.max(...velocityData);
+                
+                const xPadding = (xMax - xMin) * 0.1;
+                const yPadding = (yMax - yMin) * 0.1;
+                
+                chart.options.scales.x.min = xMin - xPadding;
+                chart.options.scales.x.max = xMax + xPadding;
+                chart.options.scales.y.min = yMin - yPadding;
+                chart.options.scales.y.max = yMax + yPadding;
+                
+                chart.update();
+            }
+        });
+
+        initChart();
+    </script>
+</body>
+</html>
