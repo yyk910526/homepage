@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伏安特性曲线绘制</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f7fa;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin: 10px 0;
+            font-size: 28px;
+        }
+
+        .button-container {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .back-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #2980b9;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #fff;
+            color: #2c3e50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #valueDisplayContainer {
+            display: flex;
+            justify-content: center;
+            width: 85vw;
+            margin: 5px 0;
+            gap: 100px;
+        }
+
+        .sensorDisplay {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            color: #2c3e50;
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 180px;
+        }
+
+        .bottom-container {
+            display: flex;
+            width: 85vw;
+            margin: 5px 0;
+            gap: 15px;
+            height: 400px;
+        }
+
+        .table-container {
+            width: 280px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .plot-container {
+            flex: 1;
+            height: 400px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #e0e0e0;
+            padding: 6px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        #recordButton {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        #recordButton:hover {
+            background-color: #27ae60;
+        }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 按钮样式细化 */
+        #connectButton, #connectButton2 {
+            background-color: #3498db;
+            color: white;
+        }
+
+        #toggleDataButton {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        #clearDataButton {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        #exportDataButton {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        #connectButton:hover, #connectButton2:hover {
+            background-color: #2980b9;
+        }
+
+        #toggleDataButton:hover {
+            background-color: #c0392b;
+        }
+
+        #clearDataButton:hover {
+            background-color: #7f8c8d;
+        }
+
+        #exportDataButton:hover {
+            background-color: #8e44ad;
+        }
+
+        #fitLineButton {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        #fitLineButton:hover {
+            background-color: #d68910;
+        }
+
+        /* 添加坐标轴切换按钮样式 */
+        #axisSwapButton {
+            background-color: #16a085;
+            color: white;
+        }
+
+        #axisSwapButton:hover {
+            background-color: #138d75;
+        }
+
+        /* 添加新的样式 */
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            margin: 0;
+            color: #007bff;
+        }
+
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+
+        .green-button {
+            background-color: #28a745 !important;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .green-button:hover {
+            background-color: #218838 !important;
+        }
+
+        .green-button:disabled {
+            background-color: #6c757d !important;
+            cursor: not-allowed;
+        }
+    </style>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js" as="script">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js" as="script">
+    <script>
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            
+            // 如果散点图已初始化
+            if (scatterChart) {
+                // 清除拟合线数据
+                scatterChart.data.datasets[1].data = [];
+                // 清除拟合方程
+                scatterChart.options.plugins.title.text = '';
+                // 更新图表
+                scatterChart.update();
+                
+                debugInfo.textContent += '\n[调试] 已清除拟合线和方程';
+            }
+        });
+
+        // 禁用F12、Ctrl+Shift+I、Ctrl+U
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 85)) {
+                return false;
+            }
+        };
+
+        // 在 head 部分修改脚本加载方式
+        function loadScript(src, callback) {
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = src;
+            script.onerror = function() {
+                // 如果主要CDN加载失败，尝试备用CDN
+                if (src.includes('cdn.jsdelivr.net')) {
+                    loadScript(src.replace('cdn.jsdelivr.net', 'cdnjs.cloudflare.com/ajax/libs'), callback);
+                } else if (src.includes('cdnjs.cloudflare.com')) {
+                    // 如果备用CDN也失败，尝试其他CDN
+                    loadScript(src.replace('cdnjs.cloudflare.com', 'unpkg.com'), callback);
+                }
+            };
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+
+
+        window.addEventListener('load', function() {
+            loadScript('https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js', function() {
+                loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js', function() {
+                    // 所有脚本加载完成后初始化
+                    if (typeof Chart !== 'undefined') {
+                        document.dispatchEvent(new Event('scriptsLoaded'));
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="title-container">
+        <h1>伏安特性曲线绘制</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div class="button-container">
+        <button id="connectButton" class="green-button">连接电压传感器</button>
+        <button id="connectButton2" class="green-button">连接电流传感器</button>
+        <button id="toggleDataButton" class="green-button">停止获取数据</button>
+        <button id="recordButton" class="green-button">记录数据</button>
+        <button id="deleteLastButton" class="green-button">删除上一个数据</button>
+        <button id="clearDataButton" class="green-button">清除数据</button>
+        <button id="exportDataButton" class="green-button">导出数据</button>
+        <button id="fitLineButton" class="green-button">一次函数拟合</button>
+        <button id="fitQuadraticButton" class="green-button">二次函数拟合</button>
+    </div>
+    <div id="valueDisplayContainer">
+        <div id="voltageDisplay" class="sensorDisplay">电压: 0.00 V</div>
+        <div id="currentDisplay" class="sensorDisplay">电流: 0.00 A</div>
+    </div>
+    <div class="bottom-container">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>电压 (V)</th>
+                        <th>电流 (A)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="plot-container">
+            <canvas id="scatterPlot"></canvas>
+        </div>
+    </div>
+
+    <script>
+    
+        let bluetoothDevice1, bluetoothDevice2;
+        let characteristic1, characteristic2;
+        let receivingData = false;
+        const connectButton = document.getElementById('connectButton');
+        const connectButton2 = document.getElementById('connectButton2');
+        const toggleDataButton = document.getElementById('toggleDataButton');
+        const debugInfo = document.getElementById('debugInfo');
+        const bufferSize = 10000;
+        let dataBuffer1 = [];
+        let dataBuffer2 = [];
+        let lastTimeValue1 = 0;
+        let lastTimeValue2 = 0;
+        let updateCounter = 0;
+        const updateFrequency = 10; // 改回原来的值
+        const drawChartButton = document.getElementById('drawChartButton');
+        let isDrawingChart = false;
+
+        let server1, server2;
+
+        // 获新按钮的引用
+        const changeDirectionButton = document.getElementById('changeDirectionButton');
+
+        let currentForce1 = 0;
+        let currentForce2 = 0;
+
+        // 添加全局变量来跟踪最大值
+        let maxVoltage = 3.0;  // 初始最大电压
+        let maxCurrent = 0.6;  // 初始最大电流
+
+        // 添加全局变量来跟踪坐标轴状态
+        let isIUMode = false;
+
+        async function connectToForceMeter(deviceNumber) {
+            try {
+                if (!navigator.bluetooth) {
+                    throw new Error('您的浏览器不支持 Web Bluetooth API');
+                }
+                
+                const isAvailable = await navigator.bluetooth.getAvailability();
+                if (!isAvailable) {
+                    throw new Error('蓝牙在您的设备上不可用');
+                }
+                
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'yykdislab' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                if (!device.name || device.name === '') {
+                    throw new Error('选择的设备没有名称');
+                }
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                const characteristic = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+                await characteristic.startNotifications();
+
+                if (deviceNumber === 1) {
+                    bluetoothDevice1 = device;
+                    characteristic1 = characteristic;
+                    server1 = server;
+                    connectButton.textContent = '断开电压传感器';
+                    connectButton.removeEventListener('click', () => connectToForceMeter(1));
+                    connectButton.addEventListener('click', () => disconnectFromForceMeter(1));
+                } else {
+                    bluetoothDevice2 = device;
+                    characteristic2 = characteristic;
+                    server2 = server;
+                    connectButton2.textContent = '断开电流传感器';
+                    connectButton2.removeEventListener('click', () => connectToForceMeter(2));
+                    connectButton2.addEventListener('click', () => disconnectFromForceMeter(2));
+                }
+
+                device.addEventListener('gattserverdisconnected', () => handleDisconnection(deviceNumber));
+
+                if (bluetoothDevice1 && bluetoothDevice2) {
+                    toggleDataButton.disabled = false;
+                    toggleDataButton.textContent = '开始接收数据';
+                }
+            } catch (error) {
+                console.error('蓝牙连接错误:', error);
+                await disconnectFromForceMeter(deviceNumber);
+            }
+        }
+
+        function handleDisconnection(deviceNumber) {
+            if (deviceNumber === 1) {
+                connectButton.textContent = '连接电压传感器';
+                connectButton.removeEventListener('click', () => disconnectFromForceMeter(1));
+                connectButton.addEventListener('click', () => connectToForceMeter(1));
+                bluetoothDevice1 = null;
+                characteristic1 = null;
+                server1 = null;
+            } else {
+                connectButton2.textContent = '连接电流传感器';
+                connectButton2.removeEventListener('click', () => disconnectFromForceMeter(2));
+                connectButton2.addEventListener('click', () => connectToForceMeter(2));
+                bluetoothDevice2 = null;
+                characteristic2 = null;
+                server2 = null;
+            }
+
+            if (!bluetoothDevice1 && !bluetoothDevice2) {
+                toggleDataButton.disabled = true;
+                toggleDataButton.textContent = '开始接收数据'; // 重置按钮文本
+                drawChartButton.disabled = true;
+                drawChartButton.classList.remove('enabled');
+                isDrawingChart = false;
+            }
+
+            if (receivingData) {
+                toggleDataReception(); // 停止接收数据
+            }
+        }
+
+        async function disconnectFromForceMeter(deviceNumber) {
+            try {
+                if (deviceNumber === 1 && server1) {
+                    await server1.disconnect();
+                    clearConnection(1);
+                } else if (deviceNumber === 2 && server2) {
+                    await server2.disconnect();
+                    clearConnection(2);
+                }
+            } catch (error) {
+                console.error('断开连接时出错:', error);
+            }
+        }
+
+        function clearConnection(deviceNumber) {
+            if (deviceNumber === 1) {
+                bluetoothDevice1 = null;
+                characteristic1 = null;
+                server1 = null;
+                connectButton.textContent = '连接电压传感器';
+            } else {
+                bluetoothDevice2 = null;
+                characteristic2 = null;
+                server2 = null;
+                connectButton2.textContent = '连接电流传感器';
+            }
+        }
+
+        function toggleDataReception() {
+            receivingData = !receivingData;
+            if (receivingData) {
+                toggleDataButton.textContent = '停止接收数据';
+                if (characteristic1) {
+                    characteristic1.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged1);
+                }
+                if (characteristic2) {
+                    characteristic2.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged2);
+                }
+            } else {
+                toggleDataButton.textContent = '开始接收数据';
+                if (characteristic1) {
+                    characteristic1.removeEventListener('characteristicvaluechanged', handleCharacteristicValueChanged1);
+                }
+                if (characteristic2) {
+                    characteristic2.removeEventListener('characteristicvaluechanged', handleCharacteristicValueChanged2);
+                }
+            }
+            if (chart && chart.update) {
+                chart.update(currentForce1, currentForce2);
+            }
+        }
+
+        function handleCharacteristicValueChanged1(event) {
+            handleCharacteristicValueChanged(event, 1);
+        }
+
+        function handleCharacteristicValueChanged2(event) {
+            handleCharacteristicValueChanged(event, 2);
+        }
+
+        function handleCharacteristicValueChanged(event, deviceNumber) {
+            if (!receivingData) return;
+
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                let forceValue = dataView.getFloat32(0, true);
+                
+                // 更新显示的值
+                updateForceValueDisplay(forceValue, deviceNumber);
+                
+                // 存储最新的值
+                if (deviceNumber === 1) {
+                    currentForce1 = forceValue;
+                } else {
+                    currentForce2 = forceValue;
+                }
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        function updateForceValueDisplay(forceValue, deviceNumber) {
+            if (deviceNumber === 1) {
+                const voltageDisplay = document.getElementById('voltageDisplay');
+                voltageDisplay.textContent = `电压: ${forceValue.toFixed(2)} V`;
+            } else {
+                const currentDisplay = document.getElementById('currentDisplay');
+                currentDisplay.textContent = `电流: ${forceValue.toFixed(2)} A`;
+            }
+        }
+
+        function checkConnectionStatus() {
+            if (server1 && !server1.connected) {
+                handleDisconnection(1);
+            }
+            if (server2 && !server2.connected) {
+                handleDisconnection(2);
+            }
+            setTimeout(checkConnectionStatus, 5000); // 每5秒检查一次连接状态
+        }
+
+        // 添加一个数器变量
+        let recordCounter = 0;
+
+        function recordData() {
+            const tableBody = document.getElementById('dataTableBody');
+            const newRow = document.createElement('tr');
+            
+            // 增加序号列
+            recordCounter++;
+            const indexCell = document.createElement('td');
+            indexCell.textContent = recordCounter;
+            newRow.appendChild(indexCell);
+            
+            // 添加电压列（保留两位小数）
+            const voltageValue = Number(currentForce1.toFixed(2));
+            const voltageCell = document.createElement('td');
+            voltageCell.textContent = voltageValue;
+            newRow.appendChild(voltageCell);
+            
+            // 添加电流列（保留两位小数）
+            const currentValue = Number(currentForce2.toFixed(2));
+            const currentCell = document.createElement('td');
+            currentCell.textContent = currentValue;
+            newRow.appendChild(currentCell);
+            
+            // 将新行添加到表格底部
+            tableBody.appendChild(newRow);
+            
+            // 检查并更新坐标轴范围
+            if (voltageValue > maxVoltage) {
+                maxVoltage = Math.ceil(voltageValue);
+                scatterChart.options.scales.x.max = maxVoltage;
+            }
+            if (currentValue > maxCurrent) {
+                maxCurrent = Math.ceil(currentValue * 10) / 10; // 向上取整到小数点后一位
+                scatterChart.options.scales.y.max = maxCurrent;
+            }
+            
+            // 更新散点图
+            scatterChart.data.datasets[0].data.push({
+                x: voltageValue,
+                y: currentValue
+            });
+            scatterChart.update();
+            
+            // 如果有滚动条，动到底部
+            const tableContainer = document.querySelector('.table-container');
+            tableContainer.scrollTop = tableContainer.scrollHeight;
+        }
+
+        let scatterChart;
+        
+        function initializeScatterPlot() {
+            const ctx = document.getElementById('scatterPlot').getContext('2d');
+            scatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '伏安特性曲线',
+                        data: [],
+                        backgroundColor: 'rgb(255, 0, 0)',
+                        borderColor: 'rgb(255, 0, 0)',
+                        pointRadius: 5,
+                    }, {
+                        label: '一次函数拟合',
+                        data: [],
+                        type: 'line',
+                        borderColor: 'rgb(40, 167, 69)',
+                        borderWidth: 5,
+                        fill: false,
+                        pointRadius: 0,
+                        hidden: true,
+                        display: false
+                    }, {
+                        label: '二次函数拟合',
+                        data: [],
+                        type: 'line',
+                        borderColor: 'rgb(0, 123, 255)',
+                        borderWidth: 5,
+                        fill: false,
+                        pointRadius: 0,
+                        hidden: true,
+                        display: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '电压 (V)'
+                            },
+                            beginAtZero: false
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '电流 (A)'
+                            },
+                            beginAtZero: false
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                filter: function(legendItem, data) {
+                                    // 只显示未被隐藏且display为true的数据集的图例
+                                    const dataset = data.datasets[legendItem.datasetIndex];
+                                    return !dataset.hidden && dataset.display !== false;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '',
+                            padding: {
+                                top: 10,
+                                bottom: 10
+                            },
+                            color: 'black',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+            return scatterChart;
+        }
+
+        // 添加最小二乘法拟合函数
+        function linearRegression(points) {
+            let sumX = 0;
+            let sumY = 0;
+            let sumXY = 0;
+            let sumXX = 0;
+            const n = points.length;
+            
+            for (let point of points) {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumXX += point.x * point.x;
+            }
+            
+            // 计算斜率和截距
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            return {
+                slope: Number(slope.toFixed(4)),
+                intercept: Number(intercept.toFixed(4))
+            };
+        }
+
+        // 修改坐标轴切换函数
+        function swapAxes() {
+            isIUMode = !isIUMode;
+            const axisSwapButton = document.getElementById('axisSwapButton');
+            axisSwapButton.textContent = isIUMode ? 'U-I' : 'I-U';
+
+            // 更新页面标题和浏览器标签标题
+            // 当按钮显示 U-I 时，标题也应该显示 U-I
+            const pageTitle = document.querySelector('h1');
+            pageTitle.textContent = axisSwapButton.textContent + '图线绘制';
+            document.title = axisSwapButton.textContent + '图线绘制';
+
+            // 交换现有数据点的坐标
+            const points = scatterChart.data.datasets[0].data;
+            const swappedPoints = points.map(point => ({
+                x: point.y,
+                y: point.x
+            }));
+            scatterChart.data.datasets[0].data = swappedPoints;
+
+            // 交换拟合线的坐标（如果存在）
+            const fitLinePoints = scatterChart.data.datasets[1].data;
+            if (fitLinePoints.length > 0) {
+                const swappedFitPoints = fitLinePoints.map(point => ({
+                    x: point.y,
+                    y: point.x
+                }));
+                scatterChart.data.datasets[1].data = swappedFitPoints;
+            }
+
+            // 更新图表标题和轴标签
+            scatterChart.data.datasets[0].label = '伏安特性曲线';
+            scatterChart.options.scales.x.title.text = isIUMode ? '电流 (A)' : '电压 (V)';
+            scatterChart.options.scales.y.title.text = isIUMode ? '电压 (V)' : '电流 (A)';
+
+            // 交换轴的范围
+            const tempMax = scatterChart.options.scales.x.max;
+            scatterChart.options.scales.x.max = scatterChart.options.scales.y.max;
+            scatterChart.options.scales.y.max = tempMax;
+
+            // 如果存在拟合方程，更新方程显示
+            const titleText = scatterChart.options.plugins.title.text;
+            if (titleText && titleText.includes('=')) {
+                const {slope, intercept} = linearRegression(swappedPoints);
+                const equation = isIUMode ? 
+                    `U = ${slope}I ${intercept >= 0 ? '+' : ''} ${intercept}` :
+                    `I = ${slope}U ${intercept >= 0 ? '+' : ''} ${intercept}`;
+                scatterChart.options.plugins.title.text = `拟合方程：${equation}`;
+            }
+
+            scatterChart.update();
+        }
+
+        // 修改初始页面标
+        document.title = '伏安特性曲线绘制实验';
+        document.querySelector('h1').textContent = '伏安特性曲线绘制实验';
+
+        // 在文档加载完成后添加拟合按钮事件监听器
+        document.addEventListener('scriptsLoaded', function() {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js 未能正确加载');
+                alert('图表组件加载失败，请检查网络连接或刷新页面重试');
+                return;
+            }
+
+            scatterChart = initializeScatterPlot();
+            
+            // 添加事件监听器
+            connectButton.addEventListener('click', async () => {
+                try {
+                    await connectToForceMeter(1);
+                } catch (error) {
+                    console.error('连接失败:', error);
+                }
+            });
+
+            connectButton2.addEventListener('click', async () => {
+                try {
+                    await connectToForceMeter(2);
+                } catch (error) {
+                    console.error('连接失败:', error);
+                }
+            });
+
+            toggleDataButton.addEventListener('click', toggleDataReception);
+
+            document.getElementById('clearDataButton').addEventListener('click', () => {
+                // 清除数据缓存
+                dataBuffer1 = [];
+                dataBuffer2 = [];
+                lastTimeValue1 = 0;
+                lastTimeValue2 = 0;
+                updateCounter = 0;
+                
+                // 清除散点图数据和拟合线
+                scatterChart.data.datasets[0].data = [];  // 清除数据点
+                scatterChart.data.datasets[1].data = [];  // 清除拟合线
+                scatterChart.options.plugins.title.text = '';  // 清除拟合方程
+                
+                // 重置坐标轴范围
+                maxVoltage = 3.0;
+                maxCurrent = 0.6;
+                scatterChart.options.scales.x.max = maxVoltage;
+                scatterChart.options.scales.y.max = maxCurrent;
+                
+                // 更新图表
+                scatterChart.update();
+                
+                // 清除表格数据
+                const tableBody = document.getElementById('dataTableBody');
+                tableBody.innerHTML = '';
+                
+                // 重置计数器
+                recordCounter = 0;
+                
+                debugInfo.textContent += '\n[调试] 所有数据已清除';
+            });
+
+            document.getElementById('exportDataButton').addEventListener('click', () => {
+                // 获取表格数据
+                const tableData = [];
+                const rows = document.getElementById('dataTableBody').getElementsByTagName('tr');
+                for (let row of rows) {
+                    const cells = row.getElementsByTagName('td');
+                    tableData.push([
+                        parseInt(cells[0].textContent), // 序号
+                        Number(parseFloat(cells[1].textContent).toFixed(2)), // 电压保留两位小数
+                        Number(parseFloat(cells[2].textContent).toFixed(2))  // 电流保留两位小数
+                    ]);
+                }
+                
+                const worksheet = XLSX.utils.aoa_to_sheet([['序号', '电压 (V)', '电流 (A)'], ...tableData]);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '伏安特性数据');
+                XLSX.writeFile(workbook, '伏安特性数据.xlsx');
+                debugInfo.textContent += '\n[调试] 数据已导出';
+            });
+
+            // 添加记录按钮的事件监听器
+            document.getElementById('recordButton').addEventListener('click', recordData);
+
+            // 初始化设置
+            toggleDataButton.disabled = true;
+            toggleDataButton.textContent = '开始接收数据';
+            
+            checkConnectionStatus();
+
+            // 添加拟合按钮事件监听器
+            document.getElementById('fitLineButton').addEventListener('click', () => {
+                const dataset = scatterChart.data.datasets[1];
+                if (!dataset.hidden) {
+                    // 隐藏拟合线和方程
+                    dataset.hidden = true;
+                    dataset.display = false;  // 隐藏图例
+                    scatterChart.options.plugins.title.text = '';
+                } else {
+                    // 显示拟合线和方程
+                    const points = scatterChart.data.datasets[0].data;
+                    const { slope, intercept } = linearRegression(points);
+                    
+                    // 生成拟合线数据点
+                    const xMin = Math.min(...points.map(p => p.x));
+                    const xMax = Math.max(...points.map(p => p.x));
+                    const fitData = [
+                        { x: xMin, y: slope * xMin + intercept },
+                        { x: xMax, y: slope * xMax + intercept }
+                    ];
+                    
+                    dataset.data = fitData;
+                    dataset.hidden = false;
+                    dataset.display = true;  // 显示图例
+                    scatterChart.options.plugins.title.text = `y = ${slope.toFixed(4)}x + ${intercept.toFixed(4)}`;
+                    scatterChart.options.plugins.title.color = 'rgb(40, 167, 69)';  // 设置方程颜色为绿色
+                }
+                scatterChart.update();
+            });
+
+            document.getElementById('fitQuadraticButton').addEventListener('click', () => {
+                const dataset = scatterChart.data.datasets[2];
+                if (!dataset.hidden) {
+                    // 隐藏拟合线和方程
+                    dataset.hidden = true;
+                    dataset.display = false;  // 隐藏图例
+                    scatterChart.options.plugins.title.text = '';
+                } else {
+                    // 显示拟合线和方程
+                    const points = scatterChart.data.datasets[0].data;
+                    const [a, b, c] = quadraticFit(points);
+                    
+                    // 生成拟合线数据点
+                    const xMin = Math.min(...points.map(p => p.x));
+                    const xMax = Math.max(...points.map(p => p.x));
+                    const fitData = [];
+                    for (let i = 0; i <= 100; i++) {
+                        const x = xMin + (xMax - xMin) * (i / 100);
+                        const y = a * x * x + b * x + c;
+                        fitData.push({ x, y });
+                    }
+                    
+                    dataset.data = fitData;
+                    dataset.hidden = false;
+                    dataset.display = true;  // 显示图例
+                    scatterChart.options.plugins.title.text = 
+                        `y = ${a.toFixed(4)}x² + ${b.toFixed(4)}x + ${c.toFixed(4)}`;
+                    scatterChart.options.plugins.title.color = 'rgb(0, 123, 255)';  // 设置方程颜色为蓝色
+                }
+                scatterChart.update();
+            });
+
+            // 添加坐标轴切换按钮事件监听器
+            document.getElementById('axisSwapButton').addEventListener('click', swapAxes);
+
+            // 修改记录数据函数，考虑当前坐标轴模式
+            const originalRecordData = recordData;
+            recordData = function() {
+                const voltageValue = Number(currentForce1.toFixed(2));
+                const currentValue = Number(currentForce2.toFixed(2));
+                
+                // 根据当前式决定如何添加数据点
+                if (isIUMode) {
+                    scatterChart.data.datasets[0].data.push({
+                        x: currentValue,
+                        y: voltageValue
+                    });
+                } else {
+                    scatterChart.data.datasets[0].data.push({
+                        x: voltageValue,
+                        y: currentValue
+                    });
+                }
+                
+                // 更新其他UI元素
+                const tableBody = document.getElementById('dataTableBody');
+                const newRow = document.createElement('tr');
+                
+                recordCounter++;
+                newRow.innerHTML = `
+                    <td>${recordCounter}</td>
+                    <td>${voltageValue}</td>
+                    <td>${currentValue}</td>
+                `;
+                
+                tableBody.appendChild(newRow);
+                
+                // 检查并更新坐标轴范围
+                if (isIUMode) {
+                    if (currentValue > scatterChart.options.scales.x.max) {
+                        scatterChart.options.scales.x.max = Math.ceil(currentValue * 10) / 10;
+                    }
+                    if (voltageValue > scatterChart.options.scales.y.max) {
+                        scatterChart.options.scales.y.max = Math.ceil(voltageValue);
+                    }
+                } else {
+                    if (voltageValue > scatterChart.options.scales.x.max) {
+                        scatterChart.options.scales.x.max = Math.ceil(voltageValue);
+                    }
+                    if (currentValue > scatterChart.options.scales.y.max) {
+                        scatterChart.options.scales.y.max = Math.ceil(currentValue * 10) / 10;
+                    }
+                }
+                
+                scatterChart.update();
+                
+                const tableContainer = document.querySelector('.table-container');
+                tableContainer.scrollTop = tableContainer.scrollHeight;
+            };
+        });
+
+        // 添加错误处理
+        window.onerror = function(msg, url, line) {
+            console.error('JavaScript error:', msg, 'at', url, ':', line);
+            debugInfo.textContent += `\n[错误] JavaScript错误: ${msg}`;
+            return false;
+        };
+
+        // 添加二次函数拟合功能
+        function quadraticFit(data) {
+            // 实现二次函数拟合算法
+            // 返回 [a, b, c] 表示 ax² + bx + c
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumXY = 0, sumX2Y = 0;
+            
+            data.forEach(point => {
+                const x = point.x;
+                const y = point.y;
+                sumX += x;
+                sumY += y;
+                sumX2 += x * x;
+                sumX3 += x * x * x;
+                sumX4 += x * x * x * x;
+                sumXY += x * y;
+                sumX2Y += x * x * y;
+            });
+
+            const matrix = [
+                [n, sumX, sumX2],
+                [sumX, sumX2, sumX3],
+                [sumX2, sumX3, sumX4]
+            ];
+            const vector = [sumY, sumXY, sumX2Y];
+
+            // 解线性方程组
+            const det = (matrix[0][0] * matrix[1][1] * matrix[2][2] + 
+                        matrix[0][1] * matrix[1][2] * matrix[2][0] + 
+                        matrix[0][2] * matrix[1][0] * matrix[2][1] - 
+                        matrix[0][2] * matrix[1][1] * matrix[2][0] - 
+                        matrix[0][1] * matrix[1][0] * matrix[2][2] - 
+                        matrix[0][0] * matrix[1][2] * matrix[2][1]);
+
+            const c = ((matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1]) * vector[0] +
+                      (matrix[0][2] * matrix[2][1] - matrix[0][1] * matrix[2][2]) * vector[1] +
+                      (matrix[0][1] * matrix[1][2] - matrix[0][2] * matrix[1][1]) * vector[2]) / det;
+
+            const b = ((matrix[1][2] * matrix[2][0] - matrix[1][0] * matrix[2][2]) * vector[0] +
+                      (matrix[0][0] * matrix[2][2] - matrix[0][2] * matrix[2][0]) * vector[1] +
+                      (matrix[0][2] * matrix[1][0] - matrix[0][0] * matrix[1][2]) * vector[2]) / det;
+
+            const a = ((matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0]) * vector[0] +
+                      (matrix[0][1] * matrix[2][0] - matrix[0][0] * matrix[2][1]) * vector[1] +
+                      (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]) * vector[2]) / det;
+
+            return [a, b, c];
+        }
+
+        // 添加自动调整坐标轴范围的函数
+        function autoAdjustAxes() {
+            if (scatterChart.data.datasets[0].data.length === 0) return;
+
+            const data = scatterChart.data.datasets[0].data;
+            const xValues = data.map(point => point.x);
+            const yValues = data.map(point => point.y);
+
+            // 计算数据范围
+            const xMin = Math.min(...xValues);
+            const xMax = Math.max(...xValues);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+
+            // 计算范围的10%作为边距
+            const xPadding = (xMax - xMin) * 0.1;
+            const yPadding = (yMax - yMin) * 0.1;
+
+            // 设置新的轴范围，确保图像饱满显示
+            scatterChart.options.scales.x.min = xMin - xPadding;
+            scatterChart.options.scales.x.max = xMax + xPadding;
+            scatterChart.options.scales.y.min = yMin - yPadding;
+            scatterChart.options.scales.y.max = yMax + yPadding;
+
+            scatterChart.update('none');
+        }
+
+        // 修改记录数据函数，添加自动调整功能
+        function recordData() {
+            const tableBody = document.getElementById('dataTableBody');
+            const newRow = document.createElement('tr');
+            
+            recordCounter++;
+            const indexCell = document.createElement('td');
+            indexCell.textContent = recordCounter;
+            newRow.appendChild(indexCell);
+            
+            const voltageValue = Number(currentForce1.toFixed(2));
+            const voltageCell = document.createElement('td');
+            voltageCell.textContent = voltageValue;
+            newRow.appendChild(voltageCell);
+            
+            const currentValue = Number(currentForce2.toFixed(2));
+            const currentCell = document.createElement('td');
+            currentCell.textContent = currentValue;
+            newRow.appendChild(currentCell);
+            
+            tableBody.appendChild(newRow);
+            
+            // 添加新数据点
+            scatterChart.data.datasets[0].data.push({
+                x: voltageValue,
+                y: currentValue
+            });
+
+            // 自动调整坐标轴范围
+            autoAdjustAxes();
+            
+            const tableContainer = document.querySelector('.table-container');
+            tableContainer.scrollTop = tableContainer.scrollHeight;
+        }
+
+        // 修改清除数据函数，重置坐标轴
+        document.getElementById('clearDataButton').addEventListener('click', () => {
+            // 清除数据
+            dataBuffer.current = [];
+            dataBuffer.voltage = [];
+            startTime = null;
+            currentChart.data.datasets[0].data = [];
+            voltageChart.data.datasets[0].data = [];
+            
+            // 重置坐标轴到默认范围
+            scatterChart.options.scales.x.min = undefined;
+            scatterChart.options.scales.x.max = undefined;
+            scatterChart.options.scales.y.min = undefined;
+            scatterChart.options.scales.y.max = undefined;
+            
+            scatterChart.update();
+            
+            // 清除表格数据
+            const tableBody = document.getElementById('dataTableBody');
+            tableBody.innerHTML = '';
+            recordCounter = 0;
+        });
+
+        // 添加删除上一个数据的函数
+        function deleteLastData() {
+            // 检查是否有数据可删除
+            if (recordCounter <= 0) {
+                return;
+            }
+
+            // 删除表格中的最后一行
+            const tableBody = document.getElementById('dataTableBody');
+            if (tableBody.lastChild) {
+                tableBody.removeChild(tableBody.lastChild);
+            }
+
+            // 删除散点图中的最后一个数据点
+            if (scatterChart.data.datasets[0].data.length > 0) {
+                scatterChart.data.datasets[0].data.pop();
+                
+                // 清除拟合线和方程
+                scatterChart.data.datasets[1].data = [];
+                scatterChart.data.datasets[2].data = [];
+                scatterChart.data.datasets[1].hidden = true;
+                scatterChart.data.datasets[2].hidden = true;
+                scatterChart.data.datasets[1].display = false;
+                scatterChart.data.datasets[2].display = false;
+                scatterChart.options.plugins.title.text = '';
+                
+                // 更新计数器
+                recordCounter--;
+                
+                // 重新调整坐标轴范围
+                autoAdjustAxes();
+            }
+        }
+
+        // 添加删除上一个数据按钮的事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteLastButton = document.getElementById('deleteLastButton');
+            if (deleteLastButton) {
+                deleteLastButton.addEventListener('click', deleteLastData);
+            }
+        });
+    </script>
+</body>
+</html>
