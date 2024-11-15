@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>湛江经开区一中数字化物理实验监控系统</title>
+    <style>
+        /* 继承universal.html的基础样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            background-color: #f0f8ff;
+        }
+
+        /* 添加新的布局样式 */
+        .main-title {
+            font-size: 28px;
+            color: #007bff;
+            margin: 10px 0;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .main-title::after {
+            content: "点击切换监控小组";
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .main-title:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(2, auto);
+            gap: 15px;
+            padding: 10px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .group-panel {
+            position: relative;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 0;  /* 防止内容溢出 */
+            height: auto;
+        }
+
+        .group-title {
+            font-size: 20px;
+            color: #007bff;
+            margin: 5px 0;
+        }
+
+        /* 缩小版的universal.html样式 */
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 5px 0;
+            justify-content: center;
+            transform: none;
+            flex-wrap: wrap;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        /* 缩小按钮尺寸 */
+        button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .value-display {
+            font-size: 16px;
+            font-weight: bold;  /* 加粗显示 */
+            padding: 5px 10px;
+            position: static;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .analysis-container {
+            padding: 5px;
+            margin: 5px 0;
+        }
+
+        .analysis-buttons {
+            gap: 4px;
+        }
+
+        .analysis-button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .analysis-result {
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        /* 添加状态指示器样式 */
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            background-color: #dc3545; /* 红色表示未连接 */
+        }
+
+        .status-indicator.connected {
+            background-color: #28a745; /* 绿色表示已连接 */
+        }
+
+        /* 添加值显示样式 */
+        .value-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 14px;
+            margin: 5px 0;
+            display: inline-block;
+        }
+
+        /* 优化分析板样式 */
+        .analysis-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin: 5px 0;
+            padding: 5px;
+        }
+
+        /* 添加工具提示样式 */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+        }
+
+        /* 添加加载动画样式 */
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 添加错误提示样式 */
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin: 5px 0;
+            display: none;
+        }
+
+        /* 添加组面板悬停效果 */
+        .group-panel {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .group-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 添加按钮禁用状态样式 */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 添加当前值提示样式 */
+        .value-display {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .value-display::after {
+            content: "点击切换物理量";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .value-display:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 添加标题容器样式 */
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        /* 修改主标题样式 */
+        .main-title {
+            margin: 0;  /* 移除原有的margin */
+        }
+
+        /* 添加设计者标签样式 */
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+
+        .analysis-button {
+            padding: 3px 8px;  /* 减小按钮内边距 */
+            font-size: 12px;   /* 减小字体大小 */
+            margin: 2px;       /* 减小按钮间距 */
+            border-radius: 3px; /* 调整圆角 */
+        }
+
+        .analysis-result {
+            transition: opacity 0.3s ease;  /* ���加淡入淡出效果 */
+            font-size: 13px;   /* 调整结果文字大小 */
+            padding: 4px 8px;  /* 调整内边距 */
+        }
+
+        .analysis-container {
+            padding: 4px;      /* 减小容器内边距 */
+            margin: 4px 0;     /* 调整外边距 */
+        }
+
+        .analysis-buttons {
+            gap: 3px;         /* 减小按钮间隔 */
+        }
+
+        /* 添加最大化/还原按钮样式 */
+        .maximize-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 24px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            transition: background-color 0.2s;
+        }
+
+        .maximize-button svg {
+            width: 16px;
+            height: 16px;
+            fill: #6c757d;
+        }
+
+        .maximize-button:hover {
+            background-color: rgba(222, 226, 230, 0.9);
+        }
+
+        /* 遮罩层样式 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 网格布局容器样式 */
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(2, auto);
+            gap: 15px;
+            padding: 10px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* 面板基础样式 */
+        .group-panel {
+            position: relative;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 0;  /* 防止内容溢出 */
+            height: auto;
+        }
+
+        /* 最大化状态样式 */
+        .group-panel.maximized {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 90vw !important;
+            height: 80vh !important;
+            max-width: 1200px !important;
+            z-index: 1001 !important;
+            background-color: white !important;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2) !important;
+            padding: 20px !important;  /* 增加内边距 */
+        }
+
+        .group-panel.maximized .chart-container {
+            height: calc(100% - 150px) !important;  /* 调整图表容器高度，留出更多空间给X轴和按钮 */
+            margin-bottom: 20px !important;  /* 增加底部边距 */
+        }
+
+        /* 图表容器样式 */
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        .group-panel.maximized .chart-container {
+            height: calc(100% - 120px) !important;
+        }
+
+        /* 添加提示文本样式 */
+        .maximize-button::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            pointer-events: none;
+        }
+
+        .maximize-button:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1 class="main-title">湛江经开区一中数字化物理实验监控系统</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div class="groups-container">
+        <!-- 为每个小组创建面 -->
+        <div class="group-panel" id="group1">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第一小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+        <!-- 添加第二小组面板 -->
+        <div class="group-panel" id="group2">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第二小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+
+        <!-- 修改第三小组面板 -->
+        <div class="group-panel" id="group3">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第三小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+
+        <!-- 修改第四小组面板 -->
+        <div class="group-panel" id="group4">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第四小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+
+        <!-- 修改第五组面板 -->
+        <div class="group-panel" id="group5">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第五小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+
+        <!-- 修改第六小组面板 -->
+        <div class="group-panel" id="group6">
+            <h2 class="group-title">
+                <span class="status-indicator"></span>
+                第六小组
+            </h2>
+            <div class="value-display">当前值: 0.000 N</div>
+            <div class="button-container">
+                <button class="green-button connect-button">连接力传感器</button>
+                <button class="green-button draw-button" disabled>采集数据</button>
+                <button class="green-button clear-button">清除数据</button>
+                <button class="green-button export-button">保存数据</button>
+                <button class="drag-mode-button">图像拖动模式</button>
+                <button class="zoom-mode-button">整体缩放</button>
+            </div>
+            <div class="chart-container">
+                <canvas class="data-chart"></canvas>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="error-message"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        // 定义传感器模式
+        const SENSOR_MODES = {
+            FORCE: {
+                title: '力',
+                unit: 'N',
+                yAxisLabel: '力 (N)',
+                valuePrefix: '力',
+                exportPrefix: '力传感器数据',
+                connectButtonText: '连接力传器'
+            },
+            VOLTAGE: {
+                title: '电压',
+                unit: 'V',
+                yAxisLabel: '电压 (V)',
+                valuePrefix: '电压',
+                exportPrefix: '电压传感器数据',
+                connectButtonText: '连接电压传感器'
+            },
+            CURRENT: {
+                title: '电流',
+                unit: 'A',
+                yAxisLabel: '电流 (A)',
+                valuePrefix: '电流',
+                exportPrefix: '电流传感器数据',
+                connectButtonText: '连接电流传感器'
+            },
+            DISTANCE: {
+                title: '位移',
+                unit: 'cm',
+                yAxisLabel: '位移 (cm)',
+                valuePrefix: '位移',
+                exportPrefix: '位移传感器数据',
+                connectButtonText: '连接位移传感器'
+            }
+        };
+
+        // 添加小组配置
+        const GROUP_SETS = {
+            SET1: {
+                groups: [1, 2, 3, 4, 5, 6],
+                devices: {
+                    1: 'yykdislab1',
+                    2: 'yykdislab2',
+                    3: 'yykdislab3',
+                    4: 'yykdislab4',
+                    5: 'yykdislab5',
+                    6: 'yykdislab6'
+                }
+            },
+            SET2: {
+                groups: [7, 8, 9, 10, 11, 12],
+                devices: {
+                    7: 'yykdislab7',
+                    8: 'yykdislab8',
+                    9: 'yykdislab9',
+                    10: 'yykdislab10',
+                    11: 'yykdislab11',
+                    12: 'yykdislab12'
+                }
+            }
+        };
+
+        // 当前小组集合状态
+        let currentGroupSet = 'SET1';
+        let groupManagers = {};
+
+        // 添加标题点击事件处理
+        document.addEventListener('DOMContentLoaded', () => {
+            const title = document.querySelector('.main-title');
+            title.addEventListener('click', toggleGroupSet);
+
+            // 初始化第一组小组
+            initializeGroups(GROUP_SETS.SET1);
+        });
+
+        // 切换小组集合
+        function toggleGroupSet() {
+            // 断开所有现有连接
+            Object.values(groupManagers).forEach(manager => {
+                if (manager.bluetoothDevice && manager.bluetoothDevice.gatt.connected) {
+                    manager.disconnectDevice();
+                }
+            });
+
+            // 切换小组集合
+            currentGroupSet = currentGroupSet === 'SET1' ? 'SET2' : 'SET1';
+            const groupSet = GROUP_SETS[currentGroupSet];
+
+            // 更新面板标题和内容
+            const panels = document.querySelectorAll('.group-panel');
+            panels.forEach((panel, index) => {
+                const groupNum = groupSet.groups[index];
+                const title = panel.querySelector('.group-title');
+                title.innerHTML = `
+                    <span class="status-indicator"></span>
+                    第${groupNum}小组
+                `;
+                panel.id = `group${groupNum}`;
+            });
+
+            // 重新初始化管理器
+            groupManagers = {};
+            initializeGroups(groupSet);
+        }
+
+        // 初始化小组
+        function initializeGroups(groupSet) {
+            groupSet.groups.forEach(groupNum => {
+                groupManagers[groupNum] = new GroupManager(groupNum, groupSet.devices[groupNum]);
+            });
+        }
+
+        // 修改 GroupManager 类的构造函数
+        class GroupManager {
+            constructor(groupId, deviceName) {
+                this.groupId = groupId;
+                this.deviceName = deviceName;  // 使用传入的设备名称
+                this.bluetoothDevice = null;
+                this.characteristic = null;
+                this.chart = null;
+                this.maxDataPoints = 1500;  // 设置最大数据点数为常量
+                this.dataBuffer = [];
+                this.isDrawing = false;
+                this.isFirstDraw = true;
+                this.isDragging = false;
+                this.isSelectMode = false;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                this.selectedData = null;
+                this.animationFrameId = null;
+                this.isXAxisZoomMode = false;
+
+                // 获取组件元素
+                this.panel = document.getElementById(`group${groupId}`);
+                this.connectButton = this.panel.querySelector('.connect-button');
+                this.drawButton = this.panel.querySelector('.draw-button');
+                this.clearButton = this.panel.querySelector('.clear-button');
+                this.exportButton = this.panel.querySelector('.export-button');
+                this.dragModeButton = this.panel.querySelector('.drag-mode-button');
+                this.zoomModeButton = this.panel.querySelector('.zoom-mode-button');
+                this.canvas = this.panel.querySelector('.data-chart');
+
+                // 添加新的属性
+                this.statusIndicator = this.panel.querySelector('.status-indicator');
+                this.valueDisplay = this.panel.querySelector('.value-display');
+                this.lastValue = 0;
+                this.valueUpdateInterval = null;
+                this.loadingSpinner = this.panel.querySelector('.loading-spinner');
+                this.errorMessage = this.panel.querySelector('.error-message');
+                this.isAutoScaling = true;
+
+                // 添加选择区域可见性控制
+                this.selectionVisible = false;
+
+                // 添加当前选择状态志
+                this.isCurrentlySelecting = false;
+
+                // 添加当前模式
+                this.currentMode = SENSOR_MODES.FORCE;
+                
+                // 为数值显示添加点击事件
+                this.valueDisplay.style.cursor = 'pointer';
+                this.valueDisplay.addEventListener('click', () => this.toggleSensorMode());
+
+                // 为每个组生成唯一的UUID，phyphox库也要相应修改
+                //第1组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530001，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530001
+                //第2组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530002，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530002
+                //第3组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530003，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530003
+                //第4组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530004，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530004
+                //第5组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530005，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530005
+                //第6组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530006，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530006
+                //第7组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530007，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530007
+                //第8组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530008，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530008
+                //第9组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530009，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530009
+                //第10组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530010，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530010  
+                //第11组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530011，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530011
+                //第12组的 SERVICE_UUID：cddf1001-30f7-4671-8b43-5e40ba530012，CHARACTERISTIC_UUID：cddf1002-30f7-4671-8b43-5e40ba530012  
+                this.SERVICE_UUID = `cddf1001-30f7-4671-8b43-5e40ba53${groupId.toString().padStart(4, '0')}`;
+                this.CHARACTERISTIC_UUID = `cddf1002-30f7-4671-8b43-5e40ba53${groupId.toString().padStart(4, '0')}`;
+
+                this.initializeGroup();
+            }
+
+            initializeGroup() {
+                // 初始化表
+                this.initChart();
+                
+                // 添加事件监听器，使用bind确保正确的this指向
+                this.connectButton.addEventListener('click', this.handleConnect.bind(this));
+                this.drawButton.addEventListener('click', this.handleDrawData.bind(this));
+                this.clearButton.addEventListener('click', this.handleClearData.bind(this));
+                this.exportButton.addEventListener('click', this.handleExportData.bind(this));
+                this.dragModeButton.addEventListener('click', this.toggleDragMode.bind(this));
+                this.zoomModeButton.addEventListener('click', this.toggleZoomMode.bind(this));
+
+                // 添加图表交互事件
+                this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+                this.canvas.addEventListener('mousedown', this.startDragging.bind(this));
+                this.canvas.addEventListener('mousemove', this.drag.bind(this));
+                this.canvas.addEventListener('mouseup', this.stopDragging.bind(this));
+                this.canvas.addEventListener('mouseleave', this.stopDragging.bind(this));
+
+                // 保存面板的原始样式
+                const saveOriginalState = () => {
+                    const computedStyle = window.getComputedStyle(this.panel);
+                    const chartContainer = this.panel.querySelector('.chart-container');
+                    return {
+                        panel: {
+                            width: computedStyle.width,
+                            height: computedStyle.height,
+                            position: computedStyle.position,
+                            top: computedStyle.top,
+                            left: computedStyle.left,
+                            transform: computedStyle.transform,
+                            zIndex: computedStyle.zIndex,
+                            gridColumn: computedStyle.gridColumn,
+                            gridRow: computedStyle.gridRow,
+                            margin: computedStyle.margin,
+                            minWidth: computedStyle.minWidth,
+                            minHeight: computedStyle.minHeight
+                        },
+                        chart: {
+                            height: window.getComputedStyle(chartContainer).height
+                        }
+                    };
+                };
+
+                let originalState = null;
+
+                // 添加最大化按钮
+                const maximizeButton = document.createElement('button');
+                maximizeButton.className = 'maximize-button';
+                maximizeButton.setAttribute('data-tooltip', '最大化'); // 设置初始提示文本
+                maximizeButton.innerHTML = `
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 3h18v18H3V3m2 2v14h14V5H5z"/>
+                    </svg>
+                `;
+                this.panel.appendChild(maximizeButton);
+
+                // 创建遮罩层
+                const overlay = document.createElement('div');
+                overlay.className = `overlay overlay-group-${this.groupId}`;
+                document.body.appendChild(overlay);
+
+                // 添加最大化/还原事件监听器
+                maximizeButton.addEventListener('click', () => {
+                    const isMaximized = !this.panel.classList.contains('maximized');
+                    
+                    if (isMaximized) {
+                        // 保存原始状态
+                        originalState = saveOriginalState();
+                        
+                        // 应用最大化样式
+                        this.panel.classList.add('maximized');
+                        overlay.classList.add('active');
+
+                        // 隐藏其他实验的最大化按钮
+                        document.querySelectorAll('.group-panel').forEach(panel => {
+                            if (panel !== this.panel) {
+                                const otherMaxButton = panel.querySelector('.maximize-button');
+                                if (otherMaxButton) {
+                                    otherMaxButton.style.display = 'none';
+                                }
+                            }
+                        });
+                        maximizeButton.setAttribute('data-tooltip', '还原'); // 更新提示文本
+                    } else {
+                        // 还原原始状态
+                        this.panel.classList.remove('maximized');
+                        overlay.classList.remove('active');
+                        
+                        // 显示所有实验的最大化按钮
+                        document.querySelectorAll('.maximize-button').forEach(button => {
+                            button.style.display = 'flex';
+                        });
+                        
+                        if (originalState) {
+                            // 还原所有样式
+                            Object.assign(this.panel.style, originalState.panel);
+                            this.panel.querySelector('.chart-container').style.height = originalState.chart.height;
+                        }
+                        maximizeButton.setAttribute('data-tooltip', '最大化'); // 更新提示文本
+                    }
+
+                    // 更新按钮图标
+                    maximizeButton.innerHTML = isMaximized ? `
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5 5h14v14H5V5m2 2v10h10V7H7z"/>
+                        </svg>
+                    ` : `
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 3h18v18H3V3m2 2v14h14V5H5z"/>
+                        </svg>
+                    `;
+
+                    // 调整图表大小
+                    setTimeout(() => {
+                        this.chart.resize();
+                        this.chart.update('none');
+                    }, 300);
+                });
+
+                // 点击遮罩层还原时也需要显示所有最大化按钮
+                overlay.addEventListener('click', () => {
+                    if (this.panel.classList.contains('maximized')) {
+                        maximizeButton.click();
+                    }
+                });
+            }
+
+            initChart() {
+                const ctx = this.canvas.getContext('2d');
+                
+                // 创建选择区域插件
+                const selectionPlugin = {
+                    id: `selection-${this.groupId}`, // 为每个图表实例创建唯一的插件ID
+                    beforeDraw: (chart, args, options) => {
+                        if (this.isSelectMode && this.selectionVisible && this.selectionStart && this.selectionEnd) {
+                            const ctx = chart.ctx;
+                            const chartArea = chart.chartArea;
+                            
+                            if (!chartArea) return;
+                            
+                            const startX = chart.scales.x.getPixelForValue(this.selectionStart.x);
+                            const endX = chart.scales.x.getPixelForValue(this.selectionEnd.x);
+                            
+                            // 确保在效的画布区域内绘制
+                            if (isNaN(startX) || isNaN(endX)) return;
+                            
+                            ctx.save();
+                            
+                            // 设置选择区域的样式
+                            ctx.fillStyle = 'rgba(135, 206, 235, 0.2)';    // 淡蓝色填充
+                            ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)';  // 淡蓝色边框
+                            ctx.lineWidth = 1;
+                            
+                            // 计算绘制区域
+                            const x = Math.min(startX, endX);
+                            const width = Math.abs(endX - startX);
+                            
+                            // 绘制选择区域
+                            ctx.beginPath();
+                            ctx.fillRect(x, chartArea.top, width, chartArea.bottom - chartArea.top);
+                            ctx.strokeRect(x, chartArea.top, width, chartArea.bottom - chartArea.top);
+                            
+                            ctx.restore();
+                        }
+                    }
+                };
+
+                // 注册插件
+                Chart.register(selectionPlugin);
+
+                // 创建图表实例
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: this.currentMode.valuePrefix,
+                            data: [],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1,
+                            pointRadius: 2,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            [`selection-${this.groupId}`]: true,  // 启用特定实例的选择插件
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    boxWidth: 40,
+                                    padding: 10,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: {
+                                    size: 12
+                                },
+                                bodyFont: {
+                                    size: 12
+                                },
+                                padding: 6
+                            },
+                            selection: true  // 启用选择区域插件
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: '时间 (s)',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    padding: {
+                                        top: 10
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 11
+                                    },
+                                    maxRotation: 0
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: this.currentMode.yAxisLabel,
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    padding: {
+                                        bottom: 10
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 11
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        },
+                        elements: {
+                            line: {
+                                tension: 0.1
+                            },
+                            point: {
+                                radius: 2,
+                                hitRadius: 4,
+                                hoverRadius: 4
+                            }
+                        }
+                    }
+                });
+            }
+
+            async handleConnect() {
+                if (this.bluetoothDevice && this.bluetoothDevice.gatt.connected) {
+                    await this.disconnectDevice();
+                } else {
+                    await this.connectDevice();
+                }
+            }
+
+            async connectDevice() {
+                this.showLoading(true);
+                this.clearError();
+                
+                try {
+                    if (this.bluetoothDevice && this.bluetoothDevice.gatt.connected) {
+                        await this.disconnectDevice();
+                    }
+
+                    console.log(`尝试连接设备: ${this.deviceName}`);
+                    this.bluetoothDevice = await navigator.bluetooth.requestDevice({
+                        filters: [{ name: this.deviceName }],
+                        optionalServices: [this.SERVICE_UUID]  // 使用唯一的UUID
+                    });
+
+                    console.log(`设备选择成功，正在连接...`);
+                    const server = await this.bluetoothDevice.gatt.connect();
+                    
+                    const service = await server.getPrimaryService(this.SERVICE_UUID);
+                    this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
+
+                    // 添加重连机制
+                    this.bluetoothDevice.addEventListener('gattserverdisconnected', async () => {
+                        console.log(`设备 ${this.deviceName} 断开连接，尝试重连...`);
+                        try {
+                            await this.reconnect();
+                        } catch (error) {
+                            console.error(`重连失败:`, error);
+                        }
+                    });
+
+                    // 更新UI状态
+                    this.connectButton.textContent = `断开${this.currentMode.valuePrefix}传感器`;
+                    this.drawButton.disabled = false;
+                    this.updateStatusIndicator(true);
+                    
+                    // 启动数值更新
+                    this.startValueUpdate();
+
+                    console.log(`组 ${this.groupId} 连接成功`);
+
+                } catch (error) {
+                    console.error(`组 ${this.groupId} 连接错误:`, error);
+                    this.showError(`连接失败: ${error.message}`);
+                    this.updateStatusIndicator(false);
+                    await this.disconnectDevice();
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async disconnectDevice() {
+                try {
+                    if (this.bluetoothDevice && this.bluetoothDevice.gatt.connected) {
+                        if (this.isDrawing) {
+                            this.isDrawing = false;
+                            if (this.characteristic) {
+                                await this.characteristic.stopNotifications();
+                            }
+                        }
+                        this.bluetoothDevice.removeEventListener('gattserverdisconnected', this.handleDisconnection);
+                        this.bluetoothDevice.gatt.disconnect();
+                    }
+                } catch (error) {
+                    console.error(`组 ${this.groupId} 断开连接错误:`, error);
+                } finally {
+                    this.handleDisconnection();
+                }
+            }
+
+            handleDisconnection() {
+                console.log(`组 ${this.groupId} 设备已断开连接`);
+                this.connectButton.textContent = `连接${this.currentMode.valuePrefix}传感器`;
+                this.drawButton.disabled = true;
+                this.updateStatusIndicator(false);
+                this.stopValueUpdate();
+                
+                if (this.isDrawing) {
+                    this.isDrawing = false;
+                    this.drawButton.textContent = '采集数据';
+                    if (this.animationFrameId) {
+                        cancelAnimationFrame(this.animationFrameId);
+                        this.animationFrameId = null;
+                    }
+                }
+
+                this.bluetoothDevice = null;
+                this.characteristic = null;
+                this.isFirstDraw = true;
+            }
+
+            handleDrawData() {
+                if (!this.bluetoothDevice || !this.bluetoothDevice.gatt.connected) {
+                    console.error(`组 ${this.groupId} 请先连接设备`);
+                    return;
+                }
+
+                this.isDrawing = !this.isDrawing;
+
+                if (this.isDrawing) {
+                    if (this.isFirstDraw) {
+                        this.dataBuffer = [];
+                        this.chart.data.datasets[0].data = [];
+                        this.chart.update();
+                        this.isFirstDraw = false;
+                    }
+                    
+                    this.drawButton.textContent = '停止采集';
+                    
+                    if (this.characteristic) {
+                        this.characteristic.startNotifications()
+                            .then(() => {
+                                console.log(`组 ${this.groupId} 数据通知已启用`);
+                                this.characteristic.addEventListener(
+                                    'characteristicvaluechanged',
+                                    this.handleCharacteristicValueChanged.bind(this)
+                                );
+                                if (!this.animationFrameId) {
+                                    this.animationFrameId = requestAnimationFrame(
+                                        () => this.updateChartAndDisplay()
+                                    );
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`组 ${this.groupId} 启用通知失败:`, error);
+                                this.isDrawing = false;
+                                this.drawButton.textContent = '采集数据';
+                            });
+                    }
+                } else {
+                    this.drawButton.textContent = '采集数据';
+                    if (this.characteristic) {
+                        this.characteristic.stopNotifications()
+                            .then(() => {
+                                console.log(`组 ${this.groupId} 数据通知已停止`);
+                                this.characteristic.removeEventListener(
+                                    'characteristicvaluechanged',
+                                    this.handleCharacteristicValueChanged.bind(this)
+                                );
+                            })
+                            .catch(error => {
+                                console.error(`组 ${this.groupId} 停止通知失败:`, error);
+                            });
+                    }
+                    if (this.animationFrameId) {
+                        cancelAnimationFrame(this.animationFrameId);
+                        this.animationFrameId = null;
+                    }
+                }
+            }
+
+            handleCharacteristicValueChanged(event) {
+                if (!this.isDrawing) return;
+
+                try {
+                    const value = event.target.value;
+                    const dataView = new DataView(value.buffer);
+                    const forceValue = dataView.getFloat32(0, true);
+                    const timeValue = dataView.getFloat32(4, true);
+
+                    // 添加数据验证，确保数据点数量不超过限制
+                    if (this.validateData(forceValue)) {
+                        // 检查是否需要移除旧数据
+                        if (this.dataBuffer.length >= this.maxDataPoints) {
+                            const removeCount = this.dataBuffer.length - this.maxDataPoints + 1;
+                            this.dataBuffer.splice(0, removeCount);
+                        }
+                        
+                        this.dataBuffer.push({ x: timeValue, y: forceValue });
+                        this.updateValueDisplay(forceValue);
+                    }
+                } catch (error) {
+                    this.handleError(error, '数据处理');
+                }
+            }
+
+            updateChartAndDisplay() {
+                if (this.dataBuffer.length > 0) {
+                    // 直接使用整个数据缓冲区更新图表
+                    this.chart.data.datasets[0].data = [...this.dataBuffer];
+
+                    // 只在非拖动状态下更新视图范围
+                    if (!this.isDragging) {
+                        const xValues = this.dataBuffer.map(point => point.x);
+                        const yValues = this.dataBuffer.map(point => point.y);
+                        const maxX = Math.max(...xValues);
+                        const minY = Math.min(...yValues);
+                        const maxY = Math.max(...yValues);
+                        const yRange = maxY - minY;
+
+                        // 保持固定的时间窗口（10秒）
+                        this.chart.options.scales.x.min = Math.max(0, maxX - 10);
+                        this.chart.options.scales.x.max = maxX + 2;
+                        
+                        // 更新Y轴范围
+                        if (!this.isZooming) {
+                            this.chart.options.scales.y.min = minY - yRange * 0.1;
+                            this.chart.options.scales.y.max = maxY + yRange * 0.1;
+                        }
+                    }
+
+                    this.chart.update('none');
+                }
+
+                if (this.isDrawing) {
+                    this.animationFrameId = requestAnimationFrame(() => this.updateChartAndDisplay());
+                } else {
+                    this.animationFrameId = null;
+                }
+            }
+
+            handleClearData() {
+                this.dataBuffer = [];
+                this.chart.data.datasets[0].data = [];
+                this.resetChart();
+                this.isFirstDraw = true;
+                this.updateValueDisplay(0);
+            }
+
+            handleExportData() {
+                const dataToExport = this.selectedData || this.dataBuffer;
+                const data = dataToExport.map(point => [point.x, point.y]);
+                
+                const worksheet = XLSX.utils.aoa_to_sheet([
+                    ['时间 (s)', this.currentMode.yAxisLabel], 
+                    ...data
+                ]);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(
+                    workbook, 
+                    worksheet, 
+                    `第${this.groupId}组${this.currentMode.exportPrefix}`
+                );
+                XLSX.writeFile(
+                    workbook, 
+                    `第${this.groupId}组${this.currentMode.exportPrefix}.xlsx`
+                );
+            }
+
+            toggleDragMode() {
+                this.isSelectMode = !this.isSelectMode;
+                this.isDragging = false;
+                this.isCurrentlySelecting = false;
+                
+                this.dragModeButton.textContent = this.isSelectMode ? 
+                    '数据分析模式' : '图像拖动模式';
+                this.dragModeButton.classList.toggle('selecting', this.isSelectMode);
+
+                // 如果退出选择模式，清除选择区域和积分区域
+                if (!this.isSelectMode) {
+                    this.selectionStart = null;
+                    this.selectionEnd = null;
+                    this.selectedData = null;
+                    this.selectionVisible = false;
+                    // 清除所有额外的数据集（包括拟合线和积分区域）
+                    while (this.chart.data.datasets.length > 1) {
+                        this.chart.data.datasets.pop();
+                    }
+                }
+                
+                // 处理分析面板显示
+                const analysisContainer = this.panel.querySelector('.analysis-container');
+                if (analysisContainer) {
+                    analysisContainer.style.display = this.isSelectMode ? 'flex' : 'none';
+                }
+                
+                this.chart.update('none');
+            }
+
+            toggleZoomMode() {
+                this.isXAxisZoomMode = !this.isXAxisZoomMode;
+                this.zoomModeButton.textContent = this.isXAxisZoomMode ? 
+                    '横轴缩放' : '整体缩放';
+            }
+
+            // 图表交互相关方法
+            handleWheel(e) {
+                if (!this.chart.chartArea) return;
+                e.preventDefault();
+
+                const rect = e.target.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                if (mouseX < this.chart.chartArea.left || 
+                    mouseX > this.chart.chartArea.right ||
+                    mouseY < this.chart.chartArea.top || 
+                    mouseY > this.chart.chartArea.bottom) {
+                    return;
+                }
+
+                this.isZooming = true;  // 标记正在缩放
+                
+                const xScale = this.chart.scales.x;
+                const yScale = this.chart.scales.y;
+                const mouseXValue = xScale.getValueForPixel(mouseX);
+                const mouseYValue = yScale.getValueForPixel(mouseY);
+
+                const zoomIntensity = 0.1;
+                const zoomFactor = e.deltaY > 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+
+                const xMin = xScale.min;
+                const xMax = xScale.max;
+                const yMin = yScale.min;
+                const yMax = yScale.max;
+
+                const newXMin = mouseXValue - (mouseXValue - xMin) * zoomFactor;
+                const newXMax = mouseXValue + (xMax - mouseXValue) * zoomFactor;
+
+                this.chart.options.scales.x.min = newXMin;
+                this.chart.options.scales.x.max = newXMax;
+
+                if (!this.isXAxisZoomMode) {
+                    const newYMin = mouseYValue - (mouseYValue - yMin) * zoomFactor;
+                    const newYMax = mouseYValue + (yMax - mouseYValue) * zoomFactor;
+                    this.chart.options.scales.y.min = newYMin;
+                    this.chart.options.scales.y.max = newYMax;
+                }
+
+                this.chart.update('none');
+
+                // 添加缩放结束处理
+                if (this.zoomTimeout) {
+                    clearTimeout(this.zoomTimeout);
+                }
+                this.zoomTimeout = setTimeout(() => {
+                    this.isZooming = false;
+                }, 200);
+            }
+
+            startDragging(e) {
+                if (e.button !== 0) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                this.isDragging = true;
+                
+                if (this.isSelectMode) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    
+                    // 确保在有效的图表区域内
+                    if (this.chart.chartArea && 
+                        x >= this.chart.chartArea.left && 
+                        x <= this.chart.chartArea.right) {
+                        
+                        this.selectionStart = {
+                            x: this.chart.scales.x.getValueForPixel(x)
+                        };
+                        this.selectionEnd = { ...this.selectionStart };
+                        this.selectedData = null;
+                        this.selectionVisible = true;
+                        
+                        // 强制重绘
+                        requestAnimationFrame(() => {
+                            this.chart.update('none');
+                        });
+                    }
+                } else {
+                    this.startX = e.offsetX;
+                    this.startY = e.offsetY;
+                    this.startXMin = this.chart.scales.x.min;
+                    this.startXMax = this.chart.scales.x.max;
+                    this.startYMin = this.chart.scales.y.min;
+                    this.startYMax = this.chart.scales.y.max;
+                }
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+
+                if (this.isSelectMode) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    
+                    // 确保在有效的图表区域内
+                    if (this.chart.chartArea && 
+                        x >= this.chart.chartArea.left && 
+                        x <= this.chart.chartArea.right) {
+                        
+                        this.selectionEnd = {
+                            x: this.chart.scales.x.getValueForPixel(x)
+                        };
+                        this.selectionVisible = true;
+                        this.isCurrentlySelecting = true;
+                        
+                        // 强制重绘
+                        requestAnimationFrame(() => {
+                            this.chart.update('none');
+                        });
+                    }
+                } else {
+                    const dx = e.offsetX - this.startX;
+                    const dy = e.offsetY - this.startY;
+                    const chartArea = this.chart.chartArea;
+                    const xRange = this.startXMax - this.startXMin;
+                    const yRange = this.startYMax - this.startYMin;
+                    
+                    const xShift = (dx / chartArea.width) * xRange;
+                    const yShift = (dy / chartArea.height) * yRange;
+                    
+                    this.chart.options.scales.x.min = this.startXMin - xShift;
+                    this.chart.options.scales.x.max = this.startXMax - xShift;
+                    this.chart.options.scales.y.min = this.startYMin + yShift;
+                    this.chart.options.scales.y.max = this.startYMax + yShift;
+                    this.chart.update('none');
+                }
+            }
+
+            stopDragging() {
+                if (!this.isDragging) return;
+                
+                if (this.isSelectMode && this.selectionStart && this.selectionEnd) {
+                    const minX = Math.min(this.selectionStart.x, this.selectionEnd.x);
+                    const maxX = Math.max(this.selectionStart.x, this.selectionEnd.x);
+                    
+                    this.selectedData = this.dataBuffer.filter(point => 
+                        point.x >= minX && point.x <= maxX
+                    );
+                    
+                    // 确保选择区域停止拖动后仍然可见
+                    this.selectionVisible = true;
+                    this.isCurrentlySelecting = false;
+                    
+                    this.updateAnalysisButtons();
+                    this.createAnalysisPanel();
+                    
+                    this.chart.update('none');
+                }
+                
+                this.isDragging = false;
+            }
+
+            createAnalysisPanel() {
+                let analysisContainer = this.panel.querySelector('.analysis-container');
+                if (!analysisContainer) {
+                    analysisContainer = document.createElement('div');
+                    analysisContainer.className = 'analysis-container';
+                    
+                    const buttonsContainer = document.createElement('div');
+                    buttonsContainer.className = 'analysis-buttons';
+                    buttonsContainer.innerHTML = `
+                        <button class="analysis-button" data-action="fitLine">线性拟合</button>
+                        <button class="analysis-button" data-action="average">平均值</button>
+                        <button class="analysis-button" data-action="max">最大值</button>
+                        <button class="analysis-button" data-action="min">最小值</button>
+                        <button class="analysis-button" data-action="area">区域积分</button>
+                    `;
+                    
+                    const resultDisplay = document.createElement('div');
+                    resultDisplay.className = 'analysis-result';
+                    
+                    analysisContainer.appendChild(buttonsContainer);
+                    analysisContainer.appendChild(resultDisplay);
+                    
+                    this.panel.querySelector('.chart-container').before(analysisContainer);
+                    
+                    // 添加事件监听器
+                    buttonsContainer.addEventListener('click', (e) => {
+                        const button = e.target.closest('.analysis-button');
+                        if (!button) return;
+                        
+                        // 清除之前的分析结果显示
+                        resultDisplay.style.opacity = '0';
+                        setTimeout(() => {
+                            resultDisplay.style.opacity = '1';
+                            const action = button.dataset.action;
+                            switch(action) {
+                                case 'fitLine': this.handleFitLine(); break;
+                                case 'average': this.handleAverage(); break;
+                                case 'max': this.handleMax(); break;
+                                case 'min': this.handleMin(); break;
+                                case 'area': this.handleArea(); break;
+                            }
+                        }, 300);
+                    });
+                }
+                
+                analysisContainer.style.display = this.isSelectMode ? 'flex' : 'none';
+                this.updateAnalysisButtons();
+            }
+
+            updateAnalysisButtons() {
+                const buttons = this.panel.querySelectorAll('.analysis-button');
+                const enabled = this.selectedData && this.selectedData.length > 0;
+                buttons.forEach(button => {
+                    button.classList.toggle('enabled', enabled);
+                    button.disabled = !enabled;
+                });
+            }
+
+            handleFitLine() {
+                // 清除之前的所有分析结果
+                while (this.chart.data.datasets.length > 1) {
+                    this.chart.data.datasets.pop();
+                }
+                
+                if (!this.selectedData || this.selectedData.length < 2) return;
+                
+                const { slope, intercept } = this.linearFit(this.selectedData);
+                const minX = Math.min(...this.selectedData.map(p => p.x));
+                const maxX = Math.max(...this.selectedData.map(p => p.x));
+                
+                const fittedLine = [
+                    { x: minX, y: slope * minX + intercept },
+                    { x: maxX, y: slope * maxX + intercept }
+                ];
+                
+                this.chart.data.datasets.push({
+                    label: '线性拟合',
+                    data: fittedLine,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 4,
+                    pointRadius: 0
+                });
+                
+                this.panel.querySelector('.analysis-result').textContent = 
+                    `拟合方程: y = ${slope.toFixed(3)}x + ${intercept.toFixed(3)}`;
+                
+                this.chart.update();
+            }
+
+            linearFit(data) {
+                const n = data.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                
+                data.forEach(point => {
+                    sumX += point.x;
+                    sumY += point.y;
+                    sumXY += point.x * point.y;
+                    sumXX += point.x * point.x;
+                });
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+                
+                return { slope, intercept };
+            }
+
+            handleAverage() {
+                // 清除之前的所有分析结果
+                while (this.chart.data.datasets.length > 1) {
+                    this.chart.data.datasets.pop();
+                }
+                
+                if (!this.selectedData || this.selectedData.length === 0) return;
+                
+                const average = this.selectedData.reduce((sum, point) => sum + point.y, 0) / 
+                    this.selectedData.length;
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                
+                this.panel.querySelector('.analysis-result').textContent = 
+                    `平均值: ${average.toFixed(decimals)} ${this.currentMode.unit}`;
+                
+                this.chart.update();
+            }
+
+            handleMax() {
+                // 清除之前的所有分析结果
+                while (this.chart.data.datasets.length > 1) {
+                    this.chart.data.datasets.pop();
+                }
+                
+                if (!this.selectedData || this.selectedData.length === 0) return;
+                
+                const maxValue = Math.max(...this.selectedData.map(point => point.y));
+                const maxPoint = this.selectedData.find(point => point.y === maxValue);
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                
+                this.panel.querySelector('.analysis-result').textContent = 
+                    `最大值: ${maxValue.toFixed(decimals)} ${this.currentMode.unit}`;
+                
+                // 添加强调显示的数据集
+                this.chart.data.datasets.push({
+                    label: '最大值点',
+                    data: [maxPoint],
+                    borderColor: 'rgba(255, 0, 0, 1)',
+                    backgroundColor: 'rgba(255, 0, 0, 0.5)',
+                    pointRadius: 4,  // 调整点的大小
+                    pointHoverRadius: 6,
+                    type: 'scatter'
+                });
+                
+                this.chart.update();
+            }
+
+            handleMin() {
+                // 清除之前的所有分析结果
+                while (this.chart.data.datasets.length > 1) {
+                    this.chart.data.datasets.pop();
+                }
+                
+                if (!this.selectedData || this.selectedData.length === 0) return;
+                
+                const minValue = Math.min(...this.selectedData.map(point => point.y));
+                const minPoint = this.selectedData.find(point => point.y === minValue);
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                
+                this.panel.querySelector('.analysis-result').textContent = 
+                    `最小值: ${minValue.toFixed(decimals)} ${this.currentMode.unit}`;
+                
+                // 添加强调显示的数据集
+                this.chart.data.datasets.push({
+                    label: '最小值点',
+                    data: [minPoint],
+                    borderColor: 'rgba(0, 0, 255, 1)',
+                    backgroundColor: 'rgba(0, 0, 255, 0.5)',
+                    pointRadius: 4,  // 调整点的大小
+                    pointHoverRadius: 6,
+                    type: 'scatter'
+                });
+                
+                this.chart.update();
+            }
+
+            handleArea() {
+                // 清除之前的所有分析结果
+                while (this.chart.data.datasets.length > 1) {
+                    this.chart.data.datasets.pop();
+                }
+                
+                if (!this.selectedData || this.selectedData.length < 2) return;
+                
+                const area = this.calculateArea(this.selectedData);
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                
+                this.panel.querySelector('.analysis-result').textContent = 
+                    `积分结果: ${area.toFixed(decimals)} ${this.currentMode.unit}·s`;
+                
+                // 创建填充区域数据集
+                this.chart.data.datasets.push({
+                    label: '积分区域',
+                    data: this.selectedData,
+                    fill: true,
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)', // 淡红色填充
+                    borderColor: 'rgba(255, 0, 0, 0.2)',     // 淡红色边框
+                    pointRadius: 0,
+                    tension: 0.1
+                });
+                
+                this.chart.update();
+            }
+
+            calculateArea(data) {
+                let area = 0;
+                for (let i = 1; i < data.length; i++) {
+                    const width = data[i].x - data[i-1].x;
+                    const height = (data[i].y + data[i-1].y) / 2;
+                    area += width * height;
+                }
+                return area;
+            }
+
+            // 添加状态指示器更新方法
+            updateStatusIndicator(connected) {
+                this.statusIndicator.classList.toggle('connected', connected);
+            }
+
+            // 添加数值显示更新方法
+            updateValueDisplay(value) {
+                this.lastValue = value;
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                this.valueDisplay.textContent = 
+                    `当前值: ${value.toFixed(decimals)} ${this.currentMode.unit}`;
+            }
+
+            // 添加数值更新定时器方
+            startValueUpdate() {
+                this.valueUpdateInterval = setInterval(() => {
+                    if (this.dataBuffer.length > 0) {
+                        const lastPoint = this.dataBuffer[this.dataBuffer.length - 1];
+                        this.updateValueDisplay(lastPoint.y);
+                    }
+                }, 100); // 每100ms更新一次
+            }
+
+            stopValueUpdate() {
+                if (this.valueUpdateInterval) {
+                    clearInterval(this.valueUpdateInterval);
+                    this.valueUpdateInterval = null;
+                }
+            }
+
+            // 添加错误处理方法
+            handleError(error, operation) {
+                console.error(`组 ${this.groupId} ${operation}错误:`, error);
+                // 可以添加错误提示UI
+            }
+
+            // 添加数据���证方法
+            validateData(value) {
+                // 检查数据是否在合理范围内
+                const isValid = !isNaN(value) && value > -1000 && value < 1000;
+                if (!isValid) {
+                    console.warn(`组 ${this.groupId} 收到异常数据: ${value}`);
+                }
+                return isValid;
+            }
+
+            // 添加图表重置方法
+            resetChart() {
+                // 重置图表范围
+                this.chart.options.scales.x.min = 0;
+                this.chart.options.scales.x.max = 10;
+                this.chart.options.scales.y.min = -1;
+                this.chart.options.scales.y.max = 1;
+                
+                // 重置其他状态
+                this.isAutoScaling = true;
+                this.selectedData = null;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                
+                this.chart.update();
+            }
+
+            // 添加自动缩放开关
+            toggleAutoScale() {
+                this.isAutoScaling = !this.isAutoScaling;
+                if (this.isAutoScaling && this.dataBuffer.length > 0) {
+                    this.autoScaleChart();
+                }
+            }
+
+            // 添加自动缩放方法
+            autoScaleChart() {
+                if (!this.isAutoScaling || this.isDragging) return;
+
+                const xValues = this.dataBuffer.map(point => point.x);
+                const yValues = this.dataBuffer.map(point => point.y);
+                
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+                
+                const xPadding = (xMax - xMin) * 0.1;
+                const yPadding = (yMax - yMin) * 0.1;
+
+                this.chart.options.scales.x.min = xMin - xPadding;
+                this.chart.options.scales.x.max = xMax + xPadding;
+                this.chart.options.scales.y.min = yMin - yPadding;
+                this.chart.options.scales.y.max = yMax + yPadding;
+                
+                this.chart.update('none');
+            }
+
+            // 添加加载态控制
+            showLoading(show) {
+                this.loadingSpinner.style.display = show ? 'block' : 'none';
+                this.connectButton.disabled = show;
+            }
+
+            // 添加错误显示控制
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    this.errorMessage.style.display = 'none';
+                }, 3000);
+            }
+
+            clearError() {
+                this.errorMessage.style.display = 'none';
+            }
+
+            // 添加切换传感器模式的方法
+            toggleSensorMode() {
+                // 循环切换模式
+                if (this.currentMode === SENSOR_MODES.FORCE) {
+                    this.currentMode = SENSOR_MODES.VOLTAGE;
+                } else if (this.currentMode === SENSOR_MODES.VOLTAGE) {
+                    this.currentMode = SENSOR_MODES.CURRENT;
+                } else if (this.currentMode === SENSOR_MODES.CURRENT) {
+                    this.currentMode = SENSOR_MODES.DISTANCE;
+                } else {
+                    this.currentMode = SENSOR_MODES.FORCE;
+                }
+                
+                // 更新UI
+                this.updateUIForMode();
+            }
+
+            // 添加更新UI的方法
+            updateUIForMode() {
+                // 更新连接按钮文本
+                if (this.bluetoothDevice && this.bluetoothDevice.gatt.connected) {
+                    this.connectButton.textContent = `断开${this.currentMode.valuePrefix}传感器`;
+                } else {
+                    this.connectButton.textContent = this.currentMode.connectButtonText;
+                }
+                
+                // 更新值显示，根据模式决定小数位数
+                const decimals = this.currentMode === SENSOR_MODES.DISTANCE ? 1 : 3;
+                this.valueDisplay.textContent = 
+                    `当前值: ${this.lastValue.toFixed(decimals)} ${this.currentMode.unit}`;
+                
+                // 更新图表
+                if (this.chart) {
+                    // 更新Y轴标签
+                    this.chart.options.scales.y.title.text = this.currentMode.yAxisLabel;
+                    
+                    // 更新图表标题
+                    this.chart.data.datasets[0].label = this.currentMode.valuePrefix;
+                    
+                    // 更新图表
+                    this.chart.update();
+                }
+            }
+
+            // 添加重连方法
+            async reconnect(maxAttempts = 3) {
+                let attempts = 0;
+                while (attempts < maxAttempts) {
+                    try {
+                        attempts++;
+                        console.log(`重连尝试 ${attempts}/${maxAttempts}`);
+                        
+                        const server = await this.bluetoothDevice.gatt.connect();
+                        const service = await server.getPrimaryService(this.SERVICE_UUID);
+                        this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
+                        
+                        console.log(`重连成功`);
+                        this.updateStatusIndicator(true);
+                        this.startValueUpdate();
+                        return true;
+                    } catch (error) {
+                        console.log(`重连失败，等待重试...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒后重试
+                    }
+                }
+                
+                console.log(`达到最大重试次数，重连失败`);
+                this.handleDisconnection();
+                return false;
+            }
+        }
+
+        // 页面加载时初化所有小组
+        document.addEventListener('DOMContentLoaded', () => {
+            // 为每个小组创建管理器实例
+            const groupManagers = {};
+            for (let i = 1; i <= 6; i++) {
+                groupManagers[i] = new GroupManager(i);
+            }
+        });
+
+        // 添加 CSS 样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .analysis-button {
+                padding: 3px 8px;  /* 减小按钮内边距 */
+                font-size: 12px;   /* 减小字体大小 */
+                margin: 2px;       /* 减小按钮间距 */
+                border-radius: 3px; /* 调整圆角 */
+            }
+
+            .analysis-result {
+                transition: opacity 0.3s ease;  /* 添加淡入淡出效果 */
+                font-size: 13px;   /* 调整结果文字大小 */
+                padding: 4px 8px;  /* 调整内边距 */
+            }
+
+            .analysis-container {
+                padding: 4px;      /* 减小容器内边距 */
+                margin: 4px 0;     /* 调整外边距 */
+            }
+
+            .analysis-buttons {
+                gap: 3px;         /* 减小按钮间隔 */
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
