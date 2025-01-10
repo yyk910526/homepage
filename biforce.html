@@ -1,0 +1,665 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作用力与反作用力实验</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            background-color: #f0f8ff;
+        }
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+        h1 {
+            margin: 0;
+            color: #007bff;;
+        }
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            justify-content: center;
+        }
+        .green-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .green-button:hover {
+            background-color: #218838;
+        }
+        .green-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #chartContainer {
+            width: 90vw;
+            height: 500px;
+            margin: 10px auto;
+        }
+        .value-display {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: #e6f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            margin: 10px auto;
+            width: 500px;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        .force1-value, .force2-value {
+            min-width: 200px;
+            text-align: left;
+            font-family: monospace;
+            color: #007bff;  /* 蓝色 */
+        }
+        .force2-value {
+            color: #dc3545;  /* 红色 */
+        }
+    </style>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+</head>
+<body>
+    <div class="title-container">
+        <h1>作用力与反作用力实验</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+
+    <div class="button-container">
+        <button id="connectButton1" class="green-button">连接作用力</button>
+        <button id="connectButton2" class="green-button">连接反作用力</button>
+        <button id="drawDataButton" class="green-button" disabled>采集数据</button>
+        <button id="clearDataButton" class="green-button">清除数据</button>
+        <button id="exportDataButton" class="green-button">保存数据</button>
+        <button id="mirrorModeButton" class="green-button">镜像模式</button>
+        <button id="zoomModeButton" class="green-button">整体缩放</button>
+        <button id="autoScaleButton" class="green-button">自动缩放</button>
+    </div>
+
+    <div class="value-display" id="forceDisplay">
+        <span class="force1-value">作用力: 0.000 N</span>
+        <span class="force2-value">反作用力: 0.000 N</span>
+    </div>
+
+    <div id="chartContainer">
+        <canvas id="dataChart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        // 全局变量
+        let chart;
+        let bluetoothDevice1, bluetoothDevice2;
+        let characteristic1, characteristic2;
+        let isDrawing = false;
+        let isMirrorMode = false;
+        let dataBuffer = {
+            force1: [],
+            force2: []
+        };
+        let startTime = null;
+        let animationFrameId = null;
+        let lastUpdateTime = 0;
+        const updateInterval = 25;
+        const bufferSize = 3000;
+        let isDragging = false;
+        let isXAxisZoomMode = false;
+        
+        // 初始化图表
+        function initializeChart() {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '作用力',
+                        data: [],
+                        borderColor: '#007bff',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointBackgroundColor: '#007bff',
+                        showLine: true,
+                        borderWidth: 3,
+                    },
+                    {
+                        label: '反作用力',
+                        data: [],
+                        borderColor: '#dc3545',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointBackgroundColor: '#dc3545',
+                        showLine: true,
+                        borderWidth: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: '时间 (s)'
+                            },
+                            min: 0,
+                            max: 10
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '力 (N)'
+                            },
+                            min: -10,
+                            max: 10
+                        }
+                    }
+                }
+            });
+
+            // 添加鼠标拖动事件监听
+            ctx.canvas.addEventListener('mousedown', startDragging);
+            ctx.canvas.addEventListener('mousemove', drag);
+            ctx.canvas.addEventListener('mouseup', stopDragging);
+            ctx.canvas.addEventListener('mouseleave', stopDragging);
+
+            // 添加滚轮事件监听
+            ctx.canvas.addEventListener('wheel', handleWheel);
+        }
+
+        // 连接蓝牙设备
+        async function connectDevice(deviceNumber) {
+            try {
+                // 如果已经连接，则断开连接
+                if (deviceNumber === 1 && bluetoothDevice1) {
+                    await disconnectDevice(1);
+                    return;
+                } else if (deviceNumber === 2 && bluetoothDevice2) {
+                    await disconnectDevice(2);
+                    return;
+                }
+
+                // 根据设备号选择不同的蓝牙名称和服务
+                const deviceConfig = deviceNumber === 1 ? {
+                    name: 'yykdislab1',
+                    serviceUUID: 'cddf1001-30f7-4671-8b43-5e40ba530001',
+                    characteristicUUID: 'cddf1002-30f7-4671-8b43-5e40ba530001'
+                } : {
+                    name: 'yykdislab2',
+                    serviceUUID: 'cddf1001-30f7-4671-8b43-5e40ba530002',
+                    characteristicUUID: 'cddf1002-30f7-4671-8b43-5e40ba530002'
+                };
+
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: deviceConfig.name }],
+                    optionalServices: [deviceConfig.serviceUUID]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(deviceConfig.serviceUUID);
+                const characteristic = await service.getCharacteristic(deviceConfig.characteristicUUID);
+
+                if (deviceNumber === 1) {
+                    bluetoothDevice1 = device;
+                    characteristic1 = characteristic;
+                    document.getElementById('connectButton1').textContent = '断开作用力';
+                } else {
+                    bluetoothDevice2 = device;
+                    characteristic2 = characteristic;
+                    document.getElementById('connectButton2').textContent = '断开反作用力';
+                }
+
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', 
+                    deviceNumber === 1 ? handleData1 : handleData2);
+
+                // 添加断开连接监听器
+                device.addEventListener('gattserverdisconnected', () => {
+                    handleDisconnection(deviceNumber);
+                });
+
+                // 启用采集按钮
+                if (bluetoothDevice1 && bluetoothDevice2) {
+                    document.getElementById('drawDataButton').disabled = false;
+                }
+
+            } catch (error) {
+                console.error('连接错误:', error);
+                handleDisconnection(deviceNumber);
+            }
+        }
+
+        // 添加断开设备函数
+        async function disconnectDevice(deviceNumber) {
+            try {
+                if (deviceNumber === 1 && bluetoothDevice1) {
+                    if (characteristic1) {
+                        await characteristic1.stopNotifications();
+                    }
+                    if (bluetoothDevice1.gatt.connected) {
+                        bluetoothDevice1.gatt.disconnect();
+                    }
+                    handleDisconnection(1);
+                } else if (deviceNumber === 2 && bluetoothDevice2) {
+                    if (characteristic2) {
+                        await characteristic2.stopNotifications();
+                    }
+                    if (bluetoothDevice2.gatt.connected) {
+                        bluetoothDevice2.gatt.disconnect();
+                    }
+                    handleDisconnection(2);
+                }
+            } catch (error) {
+                console.error('断开连接错误:', error);
+                handleDisconnection(deviceNumber);
+            }
+        }
+
+        // 添加处理断开连接的函数
+        function handleDisconnection(deviceNumber) {
+            if (deviceNumber === 1) {
+                bluetoothDevice1 = null;
+                characteristic1 = null;
+                document.getElementById('connectButton1').textContent = '连接作用力';
+            } else {
+                bluetoothDevice2 = null;
+                characteristic2 = null;
+                document.getElementById('connectButton2').textContent = '连接反作用力';
+            }
+
+            // 如果两个设备都未连接，禁用采集按钮
+            if (!bluetoothDevice1 && !bluetoothDevice2) {
+                const drawDataButton = document.getElementById('drawDataButton');
+                drawDataButton.disabled = true;
+                if (isDrawing) {
+                    isDrawing = false;
+                    drawDataButton.textContent = '采集数据';
+                }
+            }
+        }
+
+        // 处理数据
+        function handleData1(event) {
+            if (!isDrawing) return;
+            
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                const force = dataView.getFloat32(0, true);
+                
+                if (!startTime) {
+                    startTime = Date.now();
+                }
+                const timeValue = (Date.now() - startTime) / 1000;
+
+                // 添加新数据点
+                dataBuffer.force1.push({ x: timeValue, y: force });
+
+                // 限制数据点数量
+                if (dataBuffer.force1.length > bufferSize) {
+                    dataBuffer.force1.shift();
+                }
+
+                // 更新显示值
+                updateDisplay();
+
+                // 请求更新图表
+                if (!animationFrameId) {
+                    animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+                }
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        function handleData2(event) {
+            if (!isDrawing) return;
+            
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                let force = dataView.getFloat32(0, true);
+                
+                if (!startTime) {
+                    startTime = Date.now();
+                }
+                const timeValue = (Date.now() - startTime) / 1000;
+
+                if (isMirrorMode) {
+                    force = -force;
+                }
+
+                // 添加新数据点
+                dataBuffer.force2.push({ x: timeValue, y: force });
+
+                // 限制数据点数量
+                if (dataBuffer.force2.length > bufferSize) {
+                    dataBuffer.force2.shift();
+                }
+
+                // 更新显示值
+                updateDisplay();
+
+                // 请求更新图表
+                if (!animationFrameId) {
+                    animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+                }
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        // 更新显示值
+        function updateDisplay() {
+            const force1 = dataBuffer.force1.length > 0 ? dataBuffer.force1[dataBuffer.force1.length - 1].y : 0;
+            const force2 = dataBuffer.force2.length > 0 ? dataBuffer.force2[dataBuffer.force2.length - 1].y : 0;
+            
+            const forceDisplay = document.getElementById('forceDisplay');
+            forceDisplay.innerHTML = `
+                <span class="force1-value">作用力: ${force1.toFixed(3).padStart(8, ' ')} N</span>
+                <span class="force2-value">反作用力: ${force2.toFixed(3).padStart(8, ' ')} N</span>
+            `;
+        }
+
+        // 添加拖动相关函数
+        let dragStartX, dragStartY;
+        let dragStartXMin, dragStartXMax, dragStartYMin, dragStartYMax;
+
+        function startDragging(e) {
+            if (isDrawing) return; // 采集数据时不允许拖动
+            
+            isDragging = true;
+            const rect = e.target.getBoundingClientRect();
+            dragStartX = e.clientX - rect.left;
+            dragStartY = e.clientY - rect.top;
+            
+            dragStartXMin = chart.scales.x.min;
+            dragStartXMax = chart.scales.x.max;
+            dragStartYMin = chart.scales.y.min;
+            dragStartYMax = chart.scales.y.max;
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const dx = x - dragStartX;
+            const dy = y - dragStartY;
+            
+            const chartArea = chart.chartArea;
+            const xRange = dragStartXMax - dragStartXMin;
+            const yRange = dragStartYMax - dragStartYMin;
+            
+            const xShift = (dx / chartArea.width) * xRange;
+            const yShift = (dy / chartArea.height) * yRange;
+            
+            chart.options.scales.x.min = dragStartXMin - xShift;
+            chart.options.scales.x.max = dragStartXMax - xShift;
+            chart.options.scales.y.min = dragStartYMin + yShift;
+            chart.options.scales.y.max = dragStartYMax + yShift;
+            
+            chart.update('none');
+        }
+
+        function stopDragging() {
+            isDragging = false;
+        }
+
+        // 更新图表显示
+        function updateChartsAndDisplay() {
+            const currentTime = Date.now();
+            if (currentTime - lastUpdateTime >= updateInterval) {
+                if (dataBuffer.force1.length > 0 || dataBuffer.force2.length > 0) {
+                    // 更新数据集
+                    chart.data.datasets[0].data = [...dataBuffer.force1];
+                    chart.data.datasets[1].data = [...dataBuffer.force2];
+
+                    // 自动调整坐标轴范围
+                    if (isDrawing) { // 只在采集数据时自动调整
+                        // 计算时间范围
+                        const timeValues = [
+                            ...dataBuffer.force1.map(p => p.x),
+                            ...dataBuffer.force2.map(p => p.x)
+                        ];
+                        const maxTime = Math.max(...timeValues);
+                        
+                        // 计算力值范围
+                        const forceValues = [
+                            ...dataBuffer.force1.map(p => p.y),
+                            ...dataBuffer.force2.map(p => p.y)
+                        ];
+                        const minForce = Math.min(...forceValues);
+                        const maxForce = Math.max(...forceValues);
+                        const forceRange = maxForce - minForce;
+
+                        // 更新X轴范围，保持最近10秒的数据可见
+                        chart.options.scales.x.min = Math.max(0, maxTime - 10);
+                        chart.options.scales.x.max = maxTime + 2;
+
+                        // 更新Y轴范围，添加10%的边距
+                        const padding = forceRange * 0.1;
+                        chart.options.scales.y.min = minForce - padding;
+                        chart.options.scales.y.max = maxForce + padding;
+                    }
+
+                    chart.update('none');
+                }
+                lastUpdateTime = currentTime;
+            }
+
+            if (isDrawing) {
+                animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+            } else {
+                animationFrameId = null;
+            }
+        }
+
+        // 添加滚轮缩放处理函数
+        function handleWheel(e) {
+            e.preventDefault();
+            if (!chart.chartArea) return;
+
+            const rect = e.target.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (mouseX < chart.chartArea.left || mouseX > chart.chartArea.right ||
+                mouseY < chart.chartArea.top || mouseY > chart.chartArea.bottom) {
+                return;
+            }
+
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            const mouseXValue = xScale.getValueForPixel(mouseX);
+            const mouseYValue = yScale.getValueForPixel(mouseY);
+
+            const zoomIntensity = 0.1;
+            const zoomFactor = e.deltaY > 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+
+            const xMin = xScale.min;
+            const xMax = xScale.max;
+            const newXMin = mouseXValue - (mouseXValue - xMin) * zoomFactor;
+            const newXMax = mouseXValue + (xMax - mouseXValue) * zoomFactor;
+
+            chart.options.scales.x.min = newXMin;
+            chart.options.scales.x.max = newXMax;
+
+            if (!isXAxisZoomMode) {
+                const yMin = yScale.min;
+                const yMax = yScale.max;
+                const newYMin = mouseYValue - (mouseYValue - yMin) * zoomFactor;
+                const newYMax = mouseYValue + (yMax - mouseYValue) * zoomFactor;
+                chart.options.scales.y.min = newYMin;
+                chart.options.scales.y.max = newYMax;
+            }
+
+            chart.update('none');
+        }
+
+        // 事件监听器
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+
+            // 连接按钮
+            document.getElementById('connectButton1').addEventListener('click', () => connectDevice(1));
+            document.getElementById('connectButton2').addEventListener('click', () => connectDevice(2));
+
+            // 采集数据按钮
+            document.getElementById('drawDataButton').addEventListener('click', () => {
+                if (!bluetoothDevice1 || !bluetoothDevice2) {
+                    console.error('请先连接设备');
+                    return;
+                }
+
+                isDrawing = !isDrawing;
+                if (isDrawing) {
+                    // 开始采集
+                    startTime = Date.now(); // 重置开始时间
+                    dataBuffer.force1 = []; // 清空数据缓冲区
+                    dataBuffer.force2 = [];
+                    chart.data.datasets[0].data = [];
+                    chart.data.datasets[1].data = [];
+                    
+                    // 重置坐标轴范围
+                    chart.options.scales.x.min = 0;
+                    chart.options.scales.x.max = 10;
+                    chart.options.scales.y.min = -10;
+                    chart.options.scales.y.max = 10;
+                    
+                    document.getElementById('drawDataButton').textContent = '停止采集';
+                    
+                    // 启动图表更新
+                    requestAnimationFrame(updateChartsAndDisplay);
+                } else {
+                    // 停止采集
+                    document.getElementById('drawDataButton').textContent = '采集数据';
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                }
+                
+                chart.update(); // 立即更新图表以显示重置的坐标轴
+            });
+
+            // 清除数据按钮
+            document.getElementById('clearDataButton').addEventListener('click', () => {
+                dataBuffer.force1 = [];
+                dataBuffer.force2 = [];
+                startTime = null;
+                chart.data.datasets[0].data = [];
+                chart.data.datasets[1].data = [];
+                chart.update();
+                updateDisplay();
+            });
+
+            // 保存数据按
+            document.getElementById('exportDataButton').addEventListener('click', () => {
+                const worksheet = XLSX.utils.aoa_to_sheet([
+                    ['时间 (s)', '力1 (N)', '力2 (N)'],
+                    ...dataBuffer.force1.map((d1, i) => [
+                        d1.x,
+                        d1.y,
+                        dataBuffer.force2[i] ? dataBuffer.force2[i].y : ''
+                    ])
+                ]);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '力数据');
+                XLSX.writeFile(workbook, '作用力与反作用数据.xlsx');
+            });
+
+            // 镜像模式按钮
+            document.getElementById('mirrorModeButton').addEventListener('click', () => {
+                isMirrorMode = !isMirrorMode;
+                // 修正按钮文本逻辑
+                document.getElementById('mirrorModeButton').textContent = 
+                    isMirrorMode ? '镜像模式' : '非镜像模式';
+                
+                // 更新数据
+                dataBuffer.force2 = dataBuffer.force2.map(point => ({
+                    x: point.x,
+                    y: -point.y
+                }));
+                updateChartsAndDisplay();
+            });
+
+            // 添加缩放模式按钮
+            document.getElementById('zoomModeButton').addEventListener('click', () => {
+                isXAxisZoomMode = !isXAxisZoomMode;
+                document.getElementById('zoomModeButton').textContent = 
+                    isXAxisZoomMode ? '横轴缩放' : '整体缩放';
+            });
+
+            // 添加自动缩放按钮事件监听
+            document.getElementById('autoScaleButton').addEventListener('click', autoScaleChart);
+        });
+
+        // 在 script 部分添加自动缩放相关代码
+        function autoScaleChart() {
+            if (dataBuffer.force1.length === 0 && dataBuffer.force2.length === 0) return;
+
+            // 计算时间范围
+            const timeValues = [
+                ...dataBuffer.force1.map(p => p.x),
+                ...dataBuffer.force2.map(p => p.x)
+            ];
+            const minTime = Math.min(...timeValues);
+            const maxTime = Math.max(...timeValues);
+            
+            // 计算力值范围
+            const forceValues = [
+                ...dataBuffer.force1.map(p => p.y),
+                ...dataBuffer.force2.map(p => p.y)
+            ];
+            const minForce = Math.min(...forceValues);
+            const maxForce = Math.max(...forceValues);
+            const forceRange = maxForce - minForce;
+            
+            // 添加10%的边距
+            const timePadding = (maxTime - minTime) * 0.1;
+            const forcePadding = forceRange * 0.1;
+            
+            // 更新坐标轴范围
+            chart.options.scales.x.min = minTime - timePadding;
+            chart.options.scales.x.max = maxTime + timePadding;
+            chart.options.scales.y.min = minForce - forcePadding;
+            chart.options.scales.y.max = maxForce + forcePadding;
+            
+            chart.update();
+        }
+    </script>
+</body>
+</html>
