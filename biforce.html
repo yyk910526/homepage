@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛顿第三定律实验</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            background-color: #f0f8ff;
+        }
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+            position: relative;
+            cursor: pointer;
+        }
+        h1 {
+            margin: 0;
+            color: #007bff;
+        }
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            justify-content: center;
+        }
+        .green-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .green-button:hover {
+            background-color: #218838;
+        }
+        .green-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #chartContainer1, #chartContainer2 {
+            width: 90vw;
+            height: 500px;
+            margin: 10px auto;
+        }
+        .value-display {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: #e6f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            margin: 10px auto;
+            width: 500px;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        .force1-value, .force2-value {
+            min-width: 200px;
+            text-align: left;
+            font-family: monospace;
+            color: #007bff;
+        }
+        .force2-value {
+            color: #dc3545;
+        }
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+        .title-container:hover .tooltip {
+            visibility: visible;
+        }
+        .mode-content {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .hidden {
+            display: none;
+            opacity: 0;
+        }
+        .visible {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+</head>
+<body>
+    <div class="title-container" id="titleContainer">
+        <h1 id="experimentTitle">作用力与反作用力（双传感器）</h1>
+        <span class="designer">杨燕琨老师设计</span>
+        <div class="tooltip">点击切换模式</div>
+    </div>
+
+    <!-- 双传感器模式 -->
+    <div id="biforceContent" class="mode-content visible">
+        <div class="button-container">
+            <button id="connectButton1" class="green-button">连接作用力</button>
+            <button id="connectButton2" class="green-button">连接反作用力</button>
+            <button id="drawDataButton1" class="green-button" disabled>采集数据</button>
+            <button id="clearDataButton1" class="green-button">清除数据</button>
+            <button id="exportDataButton1" class="green-button">保存数据</button>
+            <button id="mirrorModeButton1" class="green-button">非镜像模式</button>
+            <button id="zoomModeButton1" class="green-button">整体缩放</button>
+            <button id="autoScaleButton1" class="green-button">自动缩放</button>
+        </div>
+
+        <div class="value-display" id="forceDisplay1">
+            <span class="force1-value">作用力: 0.000 N</span>
+            <span class="force2-value">反作用力: 0.000 N</span>
+        </div>
+
+        <div id="chartContainer1">
+            <canvas id="dataChart1"></canvas>
+        </div>
+    </div>
+
+    <!-- 单传感器模式 -->
+    <div id="dualforceContent" class="mode-content hidden">
+        <div class="button-container">
+            <button id="connectButton3" class="green-button">连接设备</button>
+            <button id="drawDataButton2" class="green-button" disabled>采集数据</button>
+            <button id="clearDataButton2" class="green-button">清除数据</button>
+            <button id="exportDataButton2" class="green-button">保存数据</button>
+            <button id="mirrorModeButton2" class="green-button">非镜像模式</button>
+            <button id="zoomModeButton2" class="green-button">整体缩放</button>
+            <button id="autoScaleButton2" class="green-button">自动缩放</button>
+        </div>
+
+        <div class="value-display" id="forceDisplay2">
+            <span class="force1-value">作用力: 0.000 N</span>
+            <span class="force2-value">反作用力: 0.000 N</span>
+        </div>
+
+        <div id="chartContainer2">
+            <canvas id="dataChart2"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let currentMode = 'biforce';
+        
+        // 双传感器模式变量
+        let chart1, bluetoothDevice1, bluetoothDevice2, characteristic1, characteristic2;
+        
+        // 单传感器模式变量
+        let chart2, bluetoothDevice3, characteristic3;
+        
+        // 共享变量
+        let isDrawing = false;
+        let isMirrorMode = false;
+        let isXAxisZoomMode = false;
+        let dataBuffer = {
+            biforce: {
+                force1: [],
+                force2: []
+            },
+            dualforce: {
+                force1: [],
+                force2: []
+            }
+        };
+
+        
+        // 模式切换函数
+        function switchMode() {
+            const titleElement = document.getElementById('experimentTitle');
+            const biforceContent = document.getElementById('biforceContent');
+            const dualforceContent = document.getElementById('dualforceContent');
+
+            if (currentMode === 'biforce') {
+                // 切换到单传感器模式
+                currentMode = 'dualforce';
+                titleElement.textContent = '作用力与反作用力（单传感器）';
+                biforceContent.classList.replace('visible', 'hidden');
+                dualforceContent.classList.replace('hidden', 'visible');
+                
+                // 断开双传感器模式的连接
+                disconnectBiforceDevices();
+                
+            } else {
+                // 切换到双传感器模式
+                currentMode = 'biforce';
+                titleElement.textContent = '作用力与反作用力（双传感器）';
+                dualforceContent.classList.replace('visible', 'hidden');
+                biforceContent.classList.replace('hidden', 'visible');
+                
+                // 断开单传感器模式的连接
+                disconnectDualforceDevice();
+            }
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 添加模式切换事件监听
+            document.getElementById('titleContainer').addEventListener('click', switchMode);
+            
+            // 初始化双传感器模式
+            initBiforceMode();
+            
+            // 初始化单传感器模式
+            initDualforceMode();
+            
+            // 设置事件监听器
+            setupEventListeners();
+        });
+
+        // 1. 图表初始化和配置
+        function initChartConfig(chartId, isSmaller = false) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            const config = {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '作用力',
+                        data: [],
+                        borderColor: '#007bff',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointBackgroundColor: '#007bff',
+                        showLine: true,
+                        borderWidth: 3,
+                    },
+                    {
+                        label: '反作用力',
+                        data: [],
+                        borderColor: '#dc3545',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointBackgroundColor: '#dc3545',
+                        showLine: true,
+                        borderWidth: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: '时间 (s)'
+                            },
+                            min: 0,
+                            max: 10
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '力 (N)'
+                            },
+                            min: -10,
+                            max: 10
+                        }
+                    }
+                }
+            };
+
+            // 为单传感器模式调整图表大小
+            if (isSmaller) {
+                config.options.aspectRatio = 2;  // 调整宽高比
+            }
+
+            return new Chart(ctx, config);
+        }
+
+        function initBiforceMode() {
+            chart1 = initChartConfig('dataChart1');
+            const canvas1 = document.getElementById('dataChart1');
+            setupChartInteractions(canvas1, chart1);
+        }
+
+        function initDualforceMode() {
+            chart2 = initChartConfig('dataChart2', true);  // 传入true表示使用较小的图表
+            const canvas2 = document.getElementById('dataChart2');
+            setupChartInteractions(canvas2, chart2);
+        }
+
+        function setupChartInteractions(canvas, chart) {
+            let isDragging = false;
+            let dragStartX, dragStartY;
+            let dragStartXMin, dragStartXMax, dragStartYMin, dragStartYMax;
+
+            // 添加拖动事件监听
+            canvas.addEventListener('mousedown', (e) => startDragging(e, chart));
+            canvas.addEventListener('mousemove', (e) => drag(e, chart));
+            canvas.addEventListener('mouseup', stopDragging);
+            canvas.addEventListener('mouseleave', stopDragging);
+            canvas.addEventListener('wheel', (e) => handleWheel(e, chart));
+        }
+
+        function startDragging(e, chart) {
+            if (isDrawing) return;
+            
+            isDragging = true;
+            const rect = e.target.getBoundingClientRect();
+            dragStartX = e.clientX - rect.left;
+            dragStartY = e.clientY - rect.top;
+            
+            dragStartXMin = chart.scales.x.min;
+            dragStartXMax = chart.scales.x.max;
+            dragStartYMin = chart.scales.y.min;
+            dragStartYMax = chart.scales.y.max;
+        }
+
+        function drag(e, chart) {
+            if (!isDragging) return;
+            
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const dx = x - dragStartX;
+            const dy = y - dragStartY;
+            
+            const chartArea = chart.chartArea;
+            const xRange = dragStartXMax - dragStartXMin;
+            const yRange = dragStartYMax - dragStartYMin;
+            
+            const xShift = (dx / chartArea.width) * xRange;
+            const yShift = (dy / chartArea.height) * yRange;
+            
+            chart.options.scales.x.min = dragStartXMin - xShift;
+            chart.options.scales.x.max = dragStartXMax - xShift;
+            chart.options.scales.y.min = dragStartYMin + yShift;
+            chart.options.scales.y.max = dragStartYMax + yShift;
+            
+            chart.update('none');
+        }
+
+        function stopDragging() {
+            isDragging = false;
+        }
+
+        function handleWheel(e, chart) {
+            e.preventDefault();
+            if (!chart.chartArea) return;
+
+            const rect = e.target.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (mouseX < chart.chartArea.left || mouseX > chart.chartArea.right ||
+                mouseY < chart.chartArea.top || mouseY > chart.chartArea.bottom) {
+                return;
+            }
+
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            const mouseXValue = xScale.getValueForPixel(mouseX);
+            const mouseYValue = yScale.getValueForPixel(mouseY);
+
+            const zoomIntensity = 0.1;
+            const zoomFactor = e.deltaY > 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+
+            const xMin = xScale.min;
+            const xMax = xScale.max;
+            const newXMin = mouseXValue - (mouseXValue - xMin) * zoomFactor;
+            const newXMax = mouseXValue + (xMax - mouseXValue) * zoomFactor;
+
+            chart.options.scales.x.min = newXMin;
+            chart.options.scales.x.max = newXMax;
+
+            if (!isXAxisZoomMode) {
+                const yMin = yScale.min;
+                const yMax = yScale.max;
+                const newYMin = mouseYValue - (mouseYValue - yMin) * zoomFactor;
+                const newYMax = mouseYValue + (yMax - mouseYValue) * zoomFactor;
+                chart.options.scales.y.min = newYMin;
+                chart.options.scales.y.max = newYMax;
+            }
+
+            chart.update('none');
+        }
+
+        function autoScaleChart(chart, data) {
+            if (!data.force1.length && !data.force2.length) return;
+
+            const timeValues = [...data.force1.map(p => p.x), ...data.force2.map(p => p.x)];
+            const minTime = Math.min(...timeValues);
+            const maxTime = Math.max(...timeValues);
+            
+            const forceValues = [...data.force1.map(p => p.y), ...data.force2.map(p => p.y)];
+            const minForce = Math.min(...forceValues);
+            const maxForce = Math.max(...forceValues);
+            const forceRange = maxForce - minForce;
+            
+            const timePadding = (maxTime - minTime) * 0.1;
+            const forcePadding = forceRange * 0.1;
+            
+            chart.options.scales.x.min = minTime - timePadding;
+            chart.options.scales.x.max = maxTime + timePadding;
+            chart.options.scales.y.min = minForce - forcePadding;
+            chart.options.scales.y.max = maxForce + forcePadding;
+            
+            chart.update();
+        }
+
+        // 2. 蓝牙连接和数据处理
+
+        // 双传感器模式的蓝牙连接
+        async function connectBiforceDevice(deviceNumber) {
+            try {
+                // 如果已经连接，则断开连接
+                if (deviceNumber === 1 && bluetoothDevice1) {
+                    await disconnectBiforceDevice(1);
+                    return;
+                } else if (deviceNumber === 2 && bluetoothDevice2) {
+                    await disconnectBiforceDevice(2);
+                    return;
+                }
+
+                // 根据设备号选择不同的蓝牙名称和服务
+                const deviceConfig = deviceNumber === 1 ? {
+                    name: 'yykdislab1',
+                    serviceUUID: 'cddf1001-30f7-4671-8b43-5e40ba530001',
+                    characteristicUUID: 'cddf1002-30f7-4671-8b43-5e40ba530001'
+                } : {
+                    name: 'yykdislab2',
+                    serviceUUID: 'cddf1001-30f7-4671-8b43-5e40ba530002',
+                    characteristicUUID: 'cddf1002-30f7-4671-8b43-5e40ba530002'
+                };
+
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: deviceConfig.name }],
+                    optionalServices: [deviceConfig.serviceUUID]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(deviceConfig.serviceUUID);
+                const characteristic = await service.getCharacteristic(deviceConfig.characteristicUUID);
+
+                if (deviceNumber === 1) {
+                    bluetoothDevice1 = device;
+                    characteristic1 = characteristic;
+                    document.getElementById('connectButton1').textContent = '断开作用力';
+                } else {
+                    bluetoothDevice2 = device;
+                    characteristic2 = characteristic;
+                    document.getElementById('connectButton2').textContent = '断开反作用力';
+                }
+
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', 
+                    deviceNumber === 1 ? handleBiforceData1 : handleBiforceData2);
+
+                device.addEventListener('gattserverdisconnected', () => {
+                    handleBiforceDisconnection(deviceNumber);
+                });
+
+                // 启用采集按钮
+                if (bluetoothDevice1 && bluetoothDevice2) {
+                    document.getElementById('drawDataButton1').disabled = false;
+                }
+
+            } catch (error) {
+                console.error('连接错误:', error);
+                handleBiforceDisconnection(deviceNumber);
+            }
+        }
+
+        // 单传感器模式的蓝牙连接
+        async function connectDualforceDevice() {
+            try {
+                if (bluetoothDevice3) {
+                    await disconnectDualforceDevice();
+                    return;
+                }
+
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'dual_force' }],
+                    optionalServices: ['cddf1001-30f7-4671-8b43-5e40ba53514a']
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('cddf1001-30f7-4671-8b43-5e40ba53514a');
+                characteristic3 = await service.getCharacteristic('cddf1002-30f7-4671-8b43-5e40ba53514a');
+
+                bluetoothDevice3 = device;
+                document.getElementById('connectButton3').textContent = '断开设备';
+                document.getElementById('drawDataButton2').disabled = false;
+
+                await characteristic3.startNotifications();
+                characteristic3.addEventListener('characteristicvaluechanged', handleDualforceData);
+
+                device.addEventListener('gattserverdisconnected', handleDualforceDisconnection);
+
+            } catch (error) {
+                console.error('连接错误:', error);
+                handleDualforceDisconnection();
+            }
+        }
+
+        // 数据处理函数
+        function handleBiforceData1(event) {
+            if (!isDrawing) return;
+            
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                const force = dataView.getFloat32(0, true);
+                const timeValue = Date.now() / 1000;
+
+                dataBuffer.biforce.force1.push({ x: timeValue, y: force });
+
+                if (dataBuffer.biforce.force1.length > bufferSize) {
+                    dataBuffer.biforce.force1.shift();
+                }
+
+                updateBiforceDisplay();
+                requestAnimationFrame(() => updateChart(chart1, dataBuffer.biforce));
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        function handleBiforceData2(event) {
+            if (!isDrawing) return;
+            
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                let force = dataView.getFloat32(0, true);
+                const timeValue = Date.now() / 1000;
+
+                if (isMirrorMode) {
+                    force = -force;
+                }
+
+                dataBuffer.biforce.force2.push({ x: timeValue, y: force });
+
+                if (dataBuffer.biforce.force2.length > bufferSize) {
+                    dataBuffer.biforce.force2.shift();
+                }
+
+                updateBiforceDisplay();
+                requestAnimationFrame(() => updateChart(chart1, dataBuffer.biforce));
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        function handleDualforceData(event) {
+            if (!isDrawing) return;
+            
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                const force1 = dataView.getFloat32(0, true);
+                const force2 = isMirrorMode ? dataView.getFloat32(4, true) : -dataView.getFloat32(4, true);
+                const timeValue = dataView.getFloat32(8, true);
+
+                dataBuffer.dualforce.force1.push({ x: timeValue, y: force1 });
+                dataBuffer.dualforce.force2.push({ x: timeValue, y: force2 });
+
+                if (dataBuffer.dualforce.force1.length > bufferSize) {
+                    dataBuffer.dualforce.force1.shift();
+                    dataBuffer.dualforce.force2.shift();
+                }
+
+                updateDualforceDisplay();
+                requestAnimationFrame(() => updateChart(chart2, dataBuffer.dualforce));
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        // 断开连接处理
+        async function disconnectBiforceDevice(deviceNumber) {
+            try {
+                if (deviceNumber === 1) {
+                    if (characteristic1) {
+                        await characteristic1.stopNotifications();
+                    }
+                    if (bluetoothDevice1?.gatt.connected) {
+                        bluetoothDevice1.gatt.disconnect();
+                    }
+                    handleBiforceDisconnection(1);
+                } else {
+                    if (characteristic2) {
+                        await characteristic2.stopNotifications();
+                    }
+                    if (bluetoothDevice2?.gatt.connected) {
+                        bluetoothDevice2.gatt.disconnect();
+                    }
+                    handleBiforceDisconnection(2);
+                }
+            } catch (error) {
+                console.error('断开连接错误:', error);
+                handleBiforceDisconnection(deviceNumber);
+            }
+        }
+
+        async function disconnectDualforceDevice() {
+            try {
+                if (characteristic3) {
+                    await characteristic3.stopNotifications();
+                }
+                if (bluetoothDevice3?.gatt.connected) {
+                    bluetoothDevice3.gatt.disconnect();
+                }
+                handleDualforceDisconnection();
+            } catch (error) {
+                console.error('断开连接错误:', error);
+                handleDualforceDisconnection();
+            }
+        }
+
+        // 断开连接的处理函数
+        function handleBiforceDisconnection(deviceNumber) {
+            if (deviceNumber === 1) {
+                bluetoothDevice1 = null;
+                characteristic1 = null;
+                document.getElementById('connectButton1').textContent = '连接作用力';
+            } else {
+                bluetoothDevice2 = null;
+                characteristic2 = null;
+                document.getElementById('connectButton2').textContent = '连接反作用力';
+            }
+
+            if (!bluetoothDevice1 && !bluetoothDevice2) {
+                document.getElementById('drawDataButton1').disabled = true;
+                if (isDrawing) {
+                    isDrawing = false;
+                    document.getElementById('drawDataButton1').textContent = '采集数据';
+                }
+            }
+        }
+
+        function handleDualforceDisconnection() {
+            bluetoothDevice3 = null;
+            characteristic3 = null;
+            document.getElementById('connectButton3').textContent = '连接设备';
+            document.getElementById('drawDataButton2').disabled = true;
+            if (isDrawing) {
+                isDrawing = false;
+                document.getElementById('drawDataButton2').textContent = '采集数据';
+            }
+        }
+
+        // 3. 用户交互和事件处理
+
+        // 更新显示值
+        function updateBiforceDisplay() {
+            const force1 = dataBuffer.biforce.force1.length > 0 ? 
+                dataBuffer.biforce.force1[dataBuffer.biforce.force1.length - 1].y : 0;
+            const force2 = dataBuffer.biforce.force2.length > 0 ? 
+                dataBuffer.biforce.force2[dataBuffer.biforce.force2.length - 1].y : 0;
+            
+            document.getElementById('forceDisplay1').innerHTML = `
+                <span class="force1-value">作用力: ${force1.toFixed(3).padStart(8, ' ')} N</span>
+                <span class="force2-value">反作用力: ${force2.toFixed(3).padStart(8, ' ')} N</span>
+            `;
+        }
+
+        function updateDualforceDisplay() {
+            const force1 = dataBuffer.dualforce.force1.length > 0 ? 
+                dataBuffer.dualforce.force1[dataBuffer.dualforce.force1.length - 1].y : 0;
+            const force2 = dataBuffer.dualforce.force2.length > 0 ? 
+                dataBuffer.dualforce.force2[dataBuffer.dualforce.force2.length - 1].y : 0;
+            
+            document.getElementById('forceDisplay2').innerHTML = `
+                <span class="force1-value">作用力: ${force1.toFixed(3).padStart(8, ' ')} N</span>
+                <span class="force2-value">反作用力: ${force2.toFixed(3).padStart(8, ' ')} N</span>
+            `;
+        }
+
+        // 更新图表
+        function updateChart(chart, data) {
+            if (!data.force1.length && !data.force2.length) return;
+
+            chart.data.datasets[0].data = [...data.force1];
+            chart.data.datasets[1].data = [...data.force2];
+
+            if (isDrawing) {
+                const timeValues = data.force1.map(p => p.x);
+                const maxTime = Math.max(...timeValues);
+                
+                const forceValues = [
+                    ...data.force1.map(p => p.y),
+                    ...data.force2.map(p => p.y)
+                ];
+                const minForce = Math.min(...forceValues);
+                const maxForce = Math.max(...forceValues);
+                const forceRange = maxForce - minForce;
+
+                chart.options.scales.x.min = Math.max(0, maxTime - 10);
+                chart.options.scales.x.max = maxTime + 2;
+
+                const padding = forceRange * 0.1;
+                chart.options.scales.y.min = minForce - padding;
+                chart.options.scales.y.max = maxForce + padding;
+            }
+
+            chart.update('none');
+        }
+
+        // 事件监听器设置
+        function setupEventListeners() {
+            // 双传感器模式的事件监听
+            document.getElementById('connectButton1').addEventListener('click', () => connectBiforceDevice(1));
+            document.getElementById('connectButton2').addEventListener('click', () => connectBiforceDevice(2));
+            
+            document.getElementById('drawDataButton1').addEventListener('click', () => {
+                if (!bluetoothDevice1 || !bluetoothDevice2) {
+                    console.error('请先连接设备');
+                    return;
+                }
+
+                isDrawing = !isDrawing;
+                if (isDrawing) {
+                    startBiforceDataCollection();
+                } else {
+                    stopBiforceDataCollection();
+                }
+            });
+
+            document.getElementById('clearDataButton1').addEventListener('click', clearBiforceData);
+            document.getElementById('exportDataButton1').addEventListener('click', exportBiforceData);
+            document.getElementById('mirrorModeButton1').addEventListener('click', toggleBiforceMirrorMode);
+            document.getElementById('zoomModeButton1').addEventListener('click', toggleBiforceZoomMode);
+            document.getElementById('autoScaleButton1').addEventListener('click', () => autoScaleChart(chart1, dataBuffer.biforce));
+
+            // 单传感器模式的事件监听
+            document.getElementById('connectButton3').addEventListener('click', connectDualforceDevice);
+            
+            document.getElementById('drawDataButton2').addEventListener('click', () => {
+                if (!bluetoothDevice3) {
+                    console.error('请先连接设备');
+                    return;
+                }
+
+                isDrawing = !isDrawing;
+                if (isDrawing) {
+                    startDualforceDataCollection();
+                } else {
+                    stopDualforceDataCollection();
+                }
+            });
+
+            document.getElementById('clearDataButton2').addEventListener('click', clearDualforceData);
+            document.getElementById('exportDataButton2').addEventListener('click', exportDualforceData);
+            document.getElementById('mirrorModeButton2').addEventListener('click', toggleDualforceMirrorMode);
+            document.getElementById('zoomModeButton2').addEventListener('click', toggleDualforceZoomMode);
+            document.getElementById('autoScaleButton2').addEventListener('click', () => autoScaleChart(chart2, dataBuffer.dualforce));
+        }
+
+        // 数据采集控制
+        function startBiforceDataCollection() {
+            dataBuffer.biforce.force1 = [];
+            dataBuffer.biforce.force2 = [];
+            chart1.data.datasets[0].data = [];
+            chart1.data.datasets[1].data = [];
+            
+            chart1.options.scales.x.min = 0;
+            chart1.options.scales.x.max = 10;
+            chart1.options.scales.y.min = -10;
+            chart1.options.scales.y.max = 10;
+            
+            document.getElementById('drawDataButton1').textContent = '停止采集';
+            chart1.update();
+        }
+
+        function stopBiforceDataCollection() {
+            document.getElementById('drawDataButton1').textContent = '采集数据';
+        }
+
+        function startDualforceDataCollection() {
+            dataBuffer.dualforce.force1 = [];
+            dataBuffer.dualforce.force2 = [];
+            chart2.data.datasets[0].data = [];
+            chart2.data.datasets[1].data = [];
+            
+            chart2.options.scales.x.min = 0;
+            chart2.options.scales.x.max = 10;
+            chart2.options.scales.y.min = -10;
+            chart2.options.scales.y.max = 10;
+            
+            document.getElementById('drawDataButton2').textContent = '停止采集';
+            chart2.update();
+        }
+
+        function stopDualforceDataCollection() {
+            document.getElementById('drawDataButton2').textContent = '采集数据';
+        }
+
+        // 清除数据
+        function clearBiforceData() {
+            dataBuffer.biforce.force1 = [];
+            dataBuffer.biforce.force2 = [];
+            chart1.data.datasets[0].data = [];
+            chart1.data.datasets[1].data = [];
+            chart1.update();
+            updateBiforceDisplay();
+        }
+
+        function clearDualforceData() {
+            dataBuffer.dualforce.force1 = [];
+            dataBuffer.dualforce.force2 = [];
+            chart2.data.datasets[0].data = [];
+            chart2.data.datasets[1].data = [];
+            chart2.update();
+            updateDualforceDisplay();
+        }
+
+        // 镜像模式切换
+        function toggleBiforceMirrorMode() {
+            isMirrorMode = !isMirrorMode;
+            document.getElementById('mirrorModeButton1').textContent = 
+                isMirrorMode ? '镜像模式' : '非镜像模式';
+            
+            dataBuffer.biforce.force2 = dataBuffer.biforce.force2.map(point => ({
+                x: point.x,
+                y: -point.y
+            }));
+            updateChart(chart1, dataBuffer.biforce);
+        }
+
+        function toggleDualforceMirrorMode() {
+            isMirrorMode = !isMirrorMode;
+            document.getElementById('mirrorModeButton2').textContent = 
+                isMirrorMode ? '镜像模式' : '非镜像模式';
+            
+            dataBuffer.dualforce.force2 = dataBuffer.dualforce.force2.map(point => ({
+                x: point.x,
+                y: -point.y
+            }));
+            updateChart(chart2, dataBuffer.dualforce);
+        }
+
+        // 缩放模式切换
+        function toggleBiforceZoomMode() {
+            isXAxisZoomMode = !isXAxisZoomMode;
+            document.getElementById('zoomModeButton1').textContent = 
+                isXAxisZoomMode ? '横轴缩放' : '整体缩放';
+        }
+
+        function toggleDualforceZoomMode() {
+            isXAxisZoomMode = !isXAxisZoomMode;
+            document.getElementById('zoomModeButton2').textContent = 
+                isXAxisZoomMode ? '横轴缩放' : '整体缩放';
+        }
+
+        // 4. 数据导出功能
+        function exportBiforceData() {
+            const worksheet = XLSX.utils.aoa_to_sheet([
+                ['时间 (s)', '作用力 (N)', '反作用力 (N)'],
+                ...dataBuffer.biforce.force1.map((d1, i) => [
+                    d1.x,
+                    d1.y,
+                    dataBuffer.biforce.force2[i] ? dataBuffer.biforce.force2[i].y : ''
+                ])
+            ]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '力数据');
+            XLSX.writeFile(workbook, '作用力与反作用力数据(双传感器).xlsx');
+        }
+
+        function exportDualforceData() {
+            const worksheet = XLSX.utils.aoa_to_sheet([
+                ['时间 (s)', '作用力 (N)', '反作用力 (N)'],
+                ...dataBuffer.dualforce.force1.map((d1, i) => [
+                    d1.x,
+                    d1.y,
+                    dataBuffer.dualforce.force2[i] ? dataBuffer.dualforce.force2[i].y : ''
+                ])
+            ]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '力数据');
+            XLSX.writeFile(workbook, '作用力与反作用力数据(单传感器).xlsx');
+        }
+
+        // 添加缓冲区大小常量
+        const bufferSize = 3000;
+    </script>
+</body>
+</html> 
