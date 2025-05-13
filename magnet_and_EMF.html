@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法拉第电磁感应定律（磁感应强度+感应电动势）</title>
+    <style>
+        /* 保留原有样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            background-color: #f0f8ff;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        html {
+            height: 100%;
+        }
+
+        /* 修改图表容器样式 */
+        #chartContainer {
+            height: calc(100vh - 132px);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: margin-top 0.3s ease;
+            overflow-y: auto;
+        }
+
+        #chartContainer.analysis-mode {
+            margin-top: 20px;
+        }
+
+        #currentChartContainer, #voltageChartContainer {
+            flex: 1;
+            position: relative;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 修改数值显示样式，增加固定宽度 */
+        .value-display {
+            margin-left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: #e6f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            width: 390px; /* 固定宽度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #007bff;
+        }
+
+        .current-value, .voltage-value {
+            margin: 0 10px;
+        }
+
+        /* 保留其他原有样式... */
+
+        /* 分析工具栏样式，添加相对定位作为结果的参考点 */
+        .analysis-toolbar {
+            display: none;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            margin: 5px auto;
+            width: 95vw;
+            justify-content: flex-start;
+            align-items: center;
+            height: 40px;
+        }
+
+        .analysis-toolbar.show {
+            display: flex;
+        }
+
+        /* 修改分析按钮容器样式 */
+        .analysis-buttons-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 修改分析按钮样式 */
+        .analysis-button {
+            padding: 8px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 120px;
+            text-align: left;
+        }
+
+        .analysis-button.enabled {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+            cursor: pointer;
+        }
+
+        .analysis-button.enabled:hover {
+            background-color: #0056b3;
+        }
+
+        /* 修改分析结果显示样式 */
+        .analysis-results {
+            display: none;
+            padding: 5px 15px;
+            background: #fff;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            margin-left: 20px;
+        }
+
+        .analysis-results.show {
+            display: block;
+        }
+
+        .analysis-results .result-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .analysis-results .result-item {
+            font-size: 14px;
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        .sync-zoom-toggle {
+            position: absolute;
+            right: 20px;
+            top: -30px;
+            padding: 5px 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        /* 修改标题容器样式 */
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            margin: 0;
+            color: #007bff;
+        }
+
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+
+        /* 修改按钮容器样式 */
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px auto 0;
+            justify-content: center;
+            width: 95vw;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        /* 修改按钮样式 */
+        .green-button, .drag-mode-button, .zoom-mode-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .green-button:hover {
+            background-color: #218838;
+        }
+
+        .green-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* 图像拖动模式按钮选中状态为蓝色 */
+        .drag-mode-button.selecting {
+            background-color: #007bff !important;
+        }
+
+        /* 修改数据选择区域样式 */
+        .selection-area {
+            position: absolute;
+            background-color: rgba(255, 0, 0, 0.1);  /* 淡红色 */
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        /* 同步按钮样式 */
+        .sync-charts-button {
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sync-charts-button.active {
+            background-color: #007bff;
+        }
+
+        .sync-charts-button:hover {
+            background-color: #218838;
+        }
+
+        .sync-charts-button.active:hover {
+            background-color: #0056b3;
+        }
+        
+        /* 添加Y轴同步选项样式 */
+        .sync-y-container {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+            background-color: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .sync-y-checkbox {
+            margin-right: 5px;
+        }
+    </style>
+    <!-- 保留原有头部内容... -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js" as="script">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js" as="script">
+    <script>
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // 禁用F12、Ctrl+Shift+I、Ctrl+U
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 85)) {
+                return false;
+            }
+        };
+        
+        // 定义蓝牙设备配置，定义的50个设备可以连接
+        const BLUETOOTH_DEVICES = Array.from({ length: 50 }, (_, i) => ({
+            name: `yykdislab${i + 1}`,
+            serviceUUID: `cddf1001-30f7-4671-8b43-5e40ba53${(i + 1).toString().padStart(4, '0')}`,
+            characteristicUUID: `cddf1002-30f7-4671-8b43-5e40ba53${(i + 1).toString().padStart(4, '0')}`
+        }));
+    </script>
+</head>
+<body>
+    <div class="title-container">
+        <h1>法拉第电磁感应定律（磁感应强度+感应电动势）</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div class="button-container">
+        <div class="button-group">
+            <button id="connectButton" class="green-button">连接设备</button>
+            <button id="drawAndDataButton" class="green-button">采集数据</button>
+            <button id="clearDataButton" class="green-button">清除数据</button>
+            <button id="exportDataButton" class="green-button">保存数据</button>
+            <button id="autoScaleButton" class="green-button">自动缩放</button>
+            <button id="zoomModeButton" class="zoom-mode-button">整体缩放</button>
+            <button id="dragModeButton" class="drag-mode-button">图像拖动模式</button>
+            <div class="sync-controls" style="display: flex; align-items: center;">
+                <button id="syncChartsButton" class="sync-charts-button">
+                    <span id="syncIcon">🔄</span> 图表联动: 关闭
+                </button>
+                <div class="sync-y-container">
+                    <input type="checkbox" id="syncYAxis" class="sync-y-checkbox" disabled>
+                    <label for="syncYAxis">同步Y轴缩放</label>
+                </div>
+            </div>
+        </div>
+        <div id="valueDisplayButton" class="value-display">
+            <div class="current-value">B: 0.00 mT</div>
+            <div class="voltage-value">EMF: 0.0 mV</div>
+        </div>
+    </div>
+    <div class="analysis-toolbar">
+        <div class="analysis-buttons-container">
+            <button class="analysis-button" data-analysis="linearFit">线性拟合</button>
+            <button class="analysis-button" data-analysis="integral">积分计算</button>
+            <button class="analysis-button" data-analysis="statistics">统计分析</button>
+        </div>
+        <div class="analysis-results"></div>
+    </div>
+    <div id="chartContainer">
+        <div id="currentChartContainer">
+            <canvas id="currentChart"></canvas>
+        </div>
+        <div id="voltageChartContainer">
+            <canvas id="voltageChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+    <script>
+        let currentChart, voltageChart;
+        let bluetoothDevice;
+        let characteristic;
+        let receivingData = false;
+        let dataBuffer = {
+            current: [],
+            voltage: []
+        };
+        let startTime = null;
+        let isDrawingChart = false;
+        let animationFrameId = null;
+        let startX, startY;
+        let startXMin, startXMax, startYMin, startYMax;
+        
+        // 添加图表联动标志
+        let syncCharts = false;
+        
+        // 缩放模式变量
+        let isXAxisZoomMode = false;
+
+        // 添加全局变量
+        let syncYAxis = false;
+
+        // 初始化两个图表
+        function initializeCharts() {
+            // 首先注册插件
+            const selectionPlugin = {
+                id: 'selection',
+                beforeDraw: (chart) => {
+                    if (selectedChart === chart && selectionStart && selectionEnd) {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        
+                        // 获取选择框的像素坐标
+                        const startX = chart.scales.x.getPixelForValue(selectionStart.x);
+                        const endX = chart.scales.x.getPixelForValue(selectionEnd.x);
+                        
+                        // 绘制选择框
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(135, 206, 235, 0.2)'; // 淡蓝色填充
+                        ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)'; // 淡蓝色边框
+                        ctx.lineWidth = 1;
+                        
+                        // 绘制填充区域
+                        ctx.fillRect(
+                            Math.min(startX, endX),
+                            chartArea.top,
+                            Math.abs(endX - startX),
+                            chartArea.bottom - chartArea.top
+                        );
+                        
+                        // 绘制边框
+                        ctx.strokeRect(
+                            Math.min(startX, endX),
+                            chartArea.top,
+                            Math.abs(endX - startX),
+                            chartArea.bottom - chartArea.top
+                        );
+                        
+                        ctx.restore();
+                    }
+                }
+            };
+
+            // 添加积分区域插件
+            const integralAreaPlugin = {
+                id: 'integralArea',
+                beforeDraw: (chart) => {
+                    if (chart.showIntegralArea && selectedData) {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.1)'; // 淡红色填充
+                        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // 淡红色边框
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        
+                        // 动到起始点（x轴上）
+                        const firstPoint = selectedData[0];
+                        let startX = chart.scales.x.getPixelForValue(firstPoint.x);
+                        let startY = chart.scales.y.getPixelForValue(0); // x轴位置
+                        
+                        ctx.moveTo(startX, startY);
+                        
+                        // 绘制数据点路径
+                        selectedData.forEach(point => {
+                            const x = chart.scales.x.getPixelForValue(point.x);
+                            const y = chart.scales.y.getPixelForValue(point.y);
+                            ctx.lineTo(x, y);
+                        });
+                        
+                        // 连接回x轴
+                        const lastPoint = selectedData[selectedData.length - 1];
+                        let endX = chart.scales.x.getPixelForValue(lastPoint.x);
+                        ctx.lineTo(endX, startY);
+                        
+                        // 闭合路径
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        ctx.restore();
+                    }
+                }
+            };
+
+            // 注册插件
+            Chart.register(selectionPlugin);
+            Chart.register(integralAreaPlugin);
+
+            // 修改图表配置，添加插件配置
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: '时间 (s)'
+                        }
+                    }
+                }
+            };
+
+            // 第一个图表配置（磁感应强度）
+            currentChart = new Chart(document.getElementById('currentChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '磁感应强度',
+                        data: [],
+                        borderColor: '#007bff',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#007bff',
+                        showLine: true,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            title: {
+                                display: true,
+                                text: '磁感应强度 (mT)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 第二个图表配置（电压）
+            voltageChart = new Chart(document.getElementById('voltageChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '感应电动势',
+                        data: [],
+                        borderColor: '#dc3545',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#dc3545',
+                        showLine: true,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            title: {
+                                display: true,
+                                text: '感应电动势 (mV)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 修改数据处理函数
+        function handleCharacteristicValueChanged(event) {
+            if (!receivingData) return;
+
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                const currentValue = dataView.getFloat32(0, true);
+                const voltageValue = dataView.getFloat32(4, true);
+                const timeValue = dataView.getFloat32(8, true);  // 读取ESP32发送的时间数据
+                
+                // 更新显示值
+                updateValueDisplay(currentValue, voltageValue);
+
+                // 如果正在绘图，添加数据点
+                if (isDrawingChart) {
+                    // 添加新数据点，使用ESP32发送的时间数据
+                    dataBuffer.current.push({ x: timeValue, y: currentValue });
+                    dataBuffer.voltage.push({ x: timeValue, y: voltageValue });
+
+                    // 如果数据点超过3000个，删除最早的数据点
+                    if (dataBuffer.current.length > 3000) {
+                        dataBuffer.current.shift();
+                    }
+                    if (dataBuffer.voltage.length > 3000) {
+                        dataBuffer.voltage.shift();
+                    }
+
+                    if (!animationFrameId) {
+                        animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+                    }
+                }
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        // 更新显示值，调整精度
+        function updateValueDisplay(current, voltage) {
+            const valueDisplay = document.getElementById('valueDisplayButton');
+            valueDisplay.innerHTML = `
+                <div class="current-value">B: ${current.toFixed(2)} mT</div>
+                <div class="voltage-value">EMF: ${voltage.toFixed(1)} mV</div>
+            `;
+        }
+
+        // 修改图表更新函数
+        function updateChartsAndDisplay() {
+            if (dataBuffer.current.length > 0 && dataBuffer.voltage.length > 0) {
+                currentChart.data.datasets[0].data = [...dataBuffer.current];
+                voltageChart.data.datasets[0].data = [...dataBuffer.voltage];
+
+                // 更新坐标轴范围
+                const timeValues = dataBuffer.current.map(point => point.x);
+                const maxTime = Math.max(...timeValues);
+
+                // 获取Y轴数据范围
+                const currentYValues = dataBuffer.current.map(point => point.y);
+                const voltageYValues = dataBuffer.voltage.map(point => point.y);
+                
+                // 计算当前可见窗口的数据 (最近10秒)
+                const visibleTimeStart = Math.max(0, maxTime - 10);
+                const visibleCurrentData = dataBuffer.current.filter(point => point.x >= visibleTimeStart && point.x <= maxTime + 2);
+                const visibleVoltageData = dataBuffer.voltage.filter(point => point.x >= visibleTimeStart && point.x <= maxTime + 2);
+                
+                // 获取可见数据的Y轴范围
+                const currentYMin = visibleCurrentData.length > 0 ? Math.min(...visibleCurrentData.map(p => p.y)) : Math.min(...currentYValues);
+                const currentYMax = visibleCurrentData.length > 0 ? Math.max(...visibleCurrentData.map(p => p.y)) : Math.max(...currentYValues);
+                const voltageYMin = visibleVoltageData.length > 0 ? Math.min(...visibleVoltageData.map(p => p.y)) : Math.min(...voltageYValues);
+                const voltageYMax = visibleVoltageData.length > 0 ? Math.max(...visibleVoltageData.map(p => p.y)) : Math.max(...voltageYValues);
+                
+                // 添加一些边距
+                const currentYPadding = Math.max(0.2, (currentYMax - currentYMin) * 0.1);
+                const voltageYPadding = Math.max(0.2, (voltageYMax - voltageYMin) * 0.1);
+
+                if (!isDragging) {
+                    // 更新X轴范围
+                    currentChart.options.scales.x.min = Math.max(0, maxTime - 10);
+                    currentChart.options.scales.x.max = maxTime + 2;
+                    voltageChart.options.scales.x.min = Math.max(0, maxTime - 10);
+                    voltageChart.options.scales.x.max = maxTime + 2;
+                    
+                    // 自动更新Y轴范围
+                    currentChart.options.scales.y.min = currentYMin - currentYPadding;
+                    currentChart.options.scales.y.max = currentYMax + currentYPadding;
+                    voltageChart.options.scales.y.min = voltageYMin - voltageYPadding;
+                    voltageChart.options.scales.y.max = voltageYMax + voltageYPadding;
+                }
+
+                currentChart.update('none');
+                voltageChart.update('none');
+            }
+
+            if (isDrawingChart) {
+                animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+            } else {
+                animationFrameId = null;
+            }
+        }
+
+        // 在文档加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM完全加载，开始初始化...');
+            
+            // 初始化图表
+            initializeCharts();
+            console.log('图表初始化完成');
+            
+            // 添加图表事件监听器
+            addChartEventListeners();
+            console.log('图表事件监听器添加完成');
+            
+            // 设置连接按钮事件监听器
+            const connectButton = document.getElementById('connectButton');
+            console.log('设置连接按钮事件监听器');
+            connectButton.addEventListener('click', function() {
+                console.log('连接按钮被点击');
+                connectToDevice();
+            });
+            
+            // 添加自动缩放按钮事件监听器
+            const autoScaleButton = document.getElementById('autoScaleButton');
+            autoScaleButton.addEventListener('click', function() {
+                console.log('自动缩放按钮被点击');
+                autoScaleCharts();
+            });
+            
+            // 添加缩放模式切换按钮的事件监听器
+            const zoomModeButton = document.getElementById('zoomModeButton');
+            zoomModeButton.addEventListener('click', function() {
+                isXAxisZoomMode = !isXAxisZoomMode;
+                zoomModeButton.textContent = isXAxisZoomMode ? '横轴缩放' : '整体缩放';
+                console.log(`缩放模式切换为: ${isXAxisZoomMode ? '横轴缩放' : '整体缩放'}`);
+            });
+            
+            // 设置联动按钮和Y轴同步选项
+            const syncChartsButton = document.getElementById('syncChartsButton');
+            const syncYAxisCheckbox = document.getElementById('syncYAxis');
+            
+            syncChartsButton.addEventListener('click', function() {
+                syncCharts = !syncCharts;
+                this.textContent = `🔄 图表联动: ${syncCharts ? '开启' : '关闭'}`;
+                this.classList.toggle('active', syncCharts);
+                
+                // 更新Y轴同步选项的状态
+                syncYAxisCheckbox.disabled = !syncCharts;
+                if (!syncCharts) {
+                    syncYAxisCheckbox.checked = false;
+                    syncYAxis = false;
+                }
+            });
+            
+            syncYAxisCheckbox.addEventListener('change', function() {
+                syncYAxis = this.checked;
+            });
+            
+            console.log('初始化完成');
+        });
+
+        // 修改连接函数
+        async function connectToDevice() {
+            try {
+                if (!navigator.bluetooth) {
+                    alert('您的浏览器不支持蓝牙功能，请使用Chrome浏览器');
+                    return;
+                }
+
+                if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                    await disconnectFromDevice();
+                }
+
+                // 构建设备过滤器和服务数组
+                const filters = BLUETOOTH_DEVICES.map(device => ({ name: device.name }));
+                const optionalServices = BLUETOOTH_DEVICES.map(device => device.serviceUUID);
+
+                console.log('开始请求蓝牙设备...'); // 添加调试日志
+                console.log('可用设备名称:', filters.map(f => f.name)); // 显示可用设备名称
+
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: filters,
+                    optionalServices: optionalServices
+                });
+
+                console.log('选择的设备:', bluetoothDevice.name); // 添加调试日志
+
+                const server = await bluetoothDevice.gatt.connect();
+                console.log('GATT服务器已连接'); // 添加调试日志
+
+                // 根据连接的设备名称找到对应的配置
+                const deviceConfig = BLUETOOTH_DEVICES.find(device => device.name === bluetoothDevice.name);
+                if (!deviceConfig) {
+                    throw new Error('未找到匹配的设备配置');
+                }
+
+                console.log('使用设备配置:', deviceConfig); // 添加调试日志
+
+                const service = await server.getPrimaryService(deviceConfig.serviceUUID);
+                characteristic = await service.getCharacteristic(deviceConfig.characteristicUUID);
+
+                console.log('启动通知...');
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
+
+                console.log('连接成功');
+                connectButton.textContent = '断开设备';
+                connectButton.removeEventListener('click', connectToDevice);
+                connectButton.addEventListener('click', disconnectFromDevice);
+
+                drawAndDataButton.disabled = false;
+                drawAndDataButton.classList.add('enabled');
+
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+            } catch (error) {
+                console.error('蓝牙连接错误:', error);
+                alert('连接失败: ' + error.message);
+                await disconnectFromDevice();
+            }
+        }
+
+        // 修改断开连接函数
+        async function disconnectFromDevice() {
+            try {
+                if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                    if (isDrawingChart) {
+                        isDrawingChart = false;
+                        receivingData = false;
+                        drawAndDataButton.textContent = '采集数据';
+                        if (characteristic) {
+                            try {
+                                await characteristic.stopNotifications();
+                            } catch (error) {
+                                console.error('停止通知失败:', error);
+                            }
+                        }
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                        }
+                    }
+                    console.log('断开连接...');
+                    bluetoothDevice.gatt.disconnect();
+                }
+            } catch (error) {
+                console.error('断开连接错误:', error);
+            } finally {
+                onDisconnected();
+            }
+        }
+
+        // 修改断连接处理函数
+        function onDisconnected() {
+            console.log('设备已断开连接');
+            connectButton.textContent = '连接设备';
+            connectButton.removeEventListener('click', disconnectFromDevice);
+            connectButton.addEventListener('click', connectToDevice);
+            drawAndDataButton.disabled = true;
+            drawAndDataButton.classList.remove('enabled');
+            bluetoothDevice = null;
+            characteristic = null;
+        }
+
+        // 数据采控制
+        const drawAndDataButton = document.getElementById('drawAndDataButton');
+        drawAndDataButton.addEventListener('click', () => {
+            if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+                console.error('请先连接设备');
+                return;
+            }
+
+            isDrawingChart = !isDrawingChart;
+            receivingData = isDrawingChart;
+
+            if (isDrawingChart) {
+                // 移除startTime的初始化，因为不再使用系统时间
+                drawAndDataButton.textContent = '停止采集';
+                
+                if (characteristic) {
+                    characteristic.startNotifications()
+                        .then(() => {
+                            console.log('数据通知已启用');
+                            if (!animationFrameId) {
+                                animationFrameId = requestAnimationFrame(updateChartsAndDisplay);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('启用通知失败:', error);
+                            isDrawingChart = false;
+                            receivingData = false;
+                            drawAndDataButton.textContent = '采集数据';
+                        });
+                }
+            } else {
+                drawAndDataButton.textContent = '采集数据';
+                if (characteristic) {
+                    characteristic.stopNotifications()
+                        .catch(error => console.error('停止通知失败:', error));
+                }
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        });
+
+        // 清除数据
+        document.getElementById('clearDataButton').addEventListener('click', () => {
+            dataBuffer.current = [];
+            dataBuffer.voltage = [];
+            startTime = null;
+            currentChart.data.datasets[0].data = [];
+            voltageChart.data.datasets[0].data = [];
+            currentChart.update();
+            voltageChart.update();
+        });
+
+        // 导出数据
+        document.getElementById('exportDataButton').addEventListener('click', () => {
+            const worksheet = XLSX.utils.aoa_to_sheet([
+                ['时间 (s)', '磁感应强度 (mT)', '感应电动势 (mV)']
+            ]);
+
+            const data = dataBuffer.current.map((point, index) => [
+                point.x,
+                point.y,
+                dataBuffer.voltage[index].y
+            ]);
+
+            XLSX.utils.sheet_add_aoa(worksheet, data, {origin: -1});
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '实验数据');
+            XLSX.writeFile(workbook, '电容器充放电数据.xlsx');
+        });
+
+        // 图表交互控制
+        let isDragging = false;
+        let isSelectMode = false;
+        let selectionStart = null;
+        let selectionEnd = null;
+        let selectedChart = null;
+
+        // 拖动模式切换
+        document.getElementById('dragModeButton').addEventListener('click', () => {
+            isSelectMode = !isSelectMode;
+            isDragging = false;
+            const dragModeButton = document.getElementById('dragModeButton');
+            const analysisToolbar = document.querySelector('.analysis-toolbar');
+            const analysisResults = document.querySelector('.analysis-results');
+            const chartContainer = document.getElementById('chartContainer');
+            
+            dragModeButton.textContent = isSelectMode ? '数据分析模式' : '图像拖动模式';
+            dragModeButton.classList.toggle('selecting', isSelectMode);
+            
+            // 显示/隐藏分析工具栏
+            analysisToolbar.classList.toggle('show', isSelectMode);
+            // 调整图表容器边距
+            chartContainer.classList.toggle('analysis-mode', isSelectMode);
+
+            // 如果切换到图像拖动模式，隐藏分析结果和所有拟合曲线
+            if (!isSelectMode) {
+                analysisResults.classList.remove('show');
+                analysisResults.innerHTML = '';
+                // 清除两个图表的拟合曲线
+                if (currentChart.data.datasets.length > 1) {
+                    currentChart.data.datasets.pop();
+                    currentChart.update();
+                }
+                if (voltageChart.data.datasets.length > 1) {
+                    voltageChart.data.datasets.pop();
+                    voltageChart.update();
+                }
+                // 清除选择区域
+                clearSelection(selectedChart);
+            }
+        });
+
+        // 添加鼠标事件监听器
+        function addChartEventListeners() {
+            const currentCanvas = document.getElementById('currentChart');
+            const voltageCanvas = document.getElementById('voltageChart');
+
+            [currentCanvas, voltageCanvas].forEach(canvas => {
+                canvas.addEventListener('mousedown', startDragging);
+                canvas.addEventListener('mousemove', drag);
+                canvas.addEventListener('mouseup', stopDragging);
+                canvas.addEventListener('mouseleave', stopDragging);
+                canvas.addEventListener('wheel', handleWheel);
+                canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    clearSelection(canvas === currentCanvas ? currentChart : voltageChart);
+                });
+            });
+        }
+
+        // 处理鼠标滚轮缩放
+        function handleWheel(e) {
+            e.preventDefault();
+            const chart = e.target === document.getElementById('currentChart') ? currentChart : voltageChart;
+            const otherChart = chart === currentChart ? voltageChart : currentChart;
+            
+            if (!chart.chartArea) return;
+
+            const rect = e.target.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (mouseX < chart.chartArea.left || mouseX > chart.chartArea.right ||
+                mouseY < chart.chartArea.top || mouseY > chart.chartArea.bottom) {
+                return;
+            }
+
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            const mouseXValue = xScale.getValueForPixel(mouseX);
+            const mouseYValue = yScale.getValueForPixel(mouseY);
+
+            const zoomIntensity = 0.1;
+            const zoomFactor = e.deltaY > 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+
+            const xMin = xScale.min;
+            const xMax = xScale.max;
+            const newXMin = mouseXValue - (mouseXValue - xMin) * zoomFactor;
+            const newXMax = mouseXValue + (xMax - mouseXValue) * zoomFactor;
+
+            chart.options.scales.x.min = newXMin;
+            chart.options.scales.x.max = newXMax;
+
+            // 同步另一个图表的X轴范围（如果启用联动）
+            if (syncCharts) {
+                otherChart.options.scales.x.min = newXMin;
+                otherChart.options.scales.x.max = newXMax;
+            }
+
+            if (!isXAxisZoomMode) {
+                const yMin = yScale.min;
+                const yMax = yScale.max;
+                const newYMin = mouseYValue - (mouseYValue - yMin) * zoomFactor;
+                const newYMax = mouseYValue + (yMax - mouseYValue) * zoomFactor;
+                chart.options.scales.y.min = newYMin;
+                chart.options.scales.y.max = newYMax;
+                
+                // 同步Y轴缩放（如果启用）
+                if (syncCharts && syncYAxis) {
+                    // 计算缩放比例，避免直接复制Y轴范围
+                    const otherYScale = otherChart.scales.y;
+                    const otherYRange = otherYScale.max - otherYScale.min;
+                    const newYRange = newYMax - newYMin;
+                    const ratio = newYRange / otherYRange;
+                    
+                    // 保持中心点的相对位置
+                    const otherYCenter = (otherYScale.max + otherYScale.min) / 2;
+                    const newOtherYRange = otherYRange * zoomFactor;
+                    
+                    otherChart.options.scales.y.min = otherYCenter - newOtherYRange / 2;
+                    otherChart.options.scales.y.max = otherYCenter + newOtherYRange / 2;
+                }
+            }
+
+            chart.update('none');
+            
+            // 如果启用联动，更新另一个图表
+            if (syncCharts) {
+                otherChart.update('none');
+            }
+        }
+
+        // 开始拖动或选择
+        function startDragging(e) {
+            if (e.button !== 0) {
+                e.preventDefault();
+                return;
+            }
+
+            isDragging = true;
+            const chart = e.target === document.getElementById('currentChart') ? currentChart : voltageChart;
+            selectedChart = chart;
+
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (isSelectMode) {
+                selectionStart = {
+                    x: chart.scales.x.getValueForPixel(x)
+                };
+                selectionEnd = { ...selectionStart };
+            } else {
+                startX = x;
+                startY = y;
+                startXMin = chart.scales.x.min;
+                startXMax = chart.scales.x.max;
+                startYMin = chart.scales.y.min;
+                startYMax = chart.scales.y.max;
+            }
+        }
+
+        // 拖动或选择过程
+        function drag(e) {
+            if (!isDragging || !selectedChart) return;
+            
+            const otherChart = selectedChart === currentChart ? voltageChart : currentChart;
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (isSelectMode) {
+                selectionEnd = {
+                    x: selectedChart.scales.x.getValueForPixel(x)
+                };
+                selectedChart.update('none');
+            } else {
+                const dx = x - startX;
+                const dy = y - startY;
+                const chartArea = selectedChart.chartArea;
+                const xRange = startXMax - startXMin;
+                const yRange = startYMax - startYMin;
+                
+                const xShift = (dx / chartArea.width) * xRange;
+                const yShift = (dy / chartArea.height) * yRange;
+                
+                selectedChart.options.scales.x.min = startXMin - xShift;
+                selectedChart.options.scales.x.max = startXMax - xShift;
+                selectedChart.options.scales.y.min = startYMin + yShift;
+                selectedChart.options.scales.y.max = startYMax + yShift;
+                
+                // 如果启用联动，同步另一个图表的X轴范围
+                if (syncCharts) {
+                    otherChart.options.scales.x.min = startXMin - xShift;
+                    otherChart.options.scales.x.max = startXMax - xShift;
+                }
+                
+                selectedChart.update('none');
+                
+                // 如果启用联动，更新另一个图表
+                if (syncCharts) {
+                    otherChart.update('none');
+                }
+            }
+        }
+
+        // 结束拖动或选择
+        function stopDragging() {
+            if (!isDragging || !selectedChart) return;
+
+            if (isSelectMode && selectionStart && selectionEnd) {
+                const minX = Math.min(selectionStart.x, selectionEnd.x);
+                const maxX = Math.max(selectionStart.x, selectionEnd.x);
+
+                // 根据选中的表选择相应的数据
+                const data = selectedChart === currentChart ? dataBuffer.current : dataBuffer.voltage;
+                selectedData = data.filter(point => 
+                    point.x >= minX && point.x <= maxX
+                );
+
+                if (selectedData && selectedData.length > 0) {
+                    // 启用分析按钮
+                    document.querySelectorAll('.analysis-button').forEach(button => {
+                        button.classList.add('enabled');
+                        button.disabled = false;
+                    });
+                }
+            }
+
+            isDragging = false;
+        }
+
+        // 清除选择
+        function clearSelection(chart) {
+            if (chart === selectedChart) {
+                selectionStart = null;
+                selectionEnd = null;
+                selectedChart = null;
+                selectedData = null;
+                
+                // 清除积分区域显示
+                currentChart.showIntegralArea = false;
+                voltageChart.showIntegralArea = false;
+                currentChart.update();
+                voltageChart.update();
+
+                // 清除两个图表的拟合曲线
+                if (currentChart.data.datasets.length > 1) {
+                    currentChart.data.datasets.pop();
+                    currentChart.update();
+                }
+                if (voltageChart.data.datasets.length > 1) {
+                    voltageChart.data.datasets.pop();
+                    voltageChart.update();
+                }
+
+                // 禁用分析按钮
+                document.querySelectorAll('.analysis-button').forEach(button => {
+                    button.classList.remove('enabled');
+                    button.disabled = true;
+                });
+
+                // 清除分析结果
+                analysisResults.innerHTML = '';
+                analysisResults.classList.remove('show');
+                
+                chart.update();
+            }
+        }
+
+        // 添加全局变量
+        let selectedData = null;  // 用于存储选中的数据
+        const analysisButtons = document.querySelectorAll('.analysis-button');
+        const analysisResults = document.querySelector('.analysis-results');
+
+        // 修改分析按钮的事件监听
+        analysisButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (!selectedData || selectedData.length === 0) {
+                    alert('请选择数据区域');
+                    return;
+                }
+
+                // 清除之前的拟合曲线
+                if (currentChart.data.datasets.length > 1) {
+                    currentChart.data.datasets.pop();
+                    currentChart.update();
+                }
+                if (voltageChart.data.datasets.length > 1) {
+                    voltageChart.data.datasets.pop();
+                    voltageChart.update();
+                }
+
+                // 获取分析类型
+                const analysisType = button.dataset.analysis;
+                const isCurrentData = selectedChart === currentChart;
+                const unit = isCurrentData ? 'mT' : 'mV';
+                const dataType = isCurrentData ? '磁感应强度' : '感应电动势';
+
+                // 清除所有图表的积分区域显示
+                currentChart.showIntegralArea = false;
+                voltageChart.showIntegralArea = false;
+                
+                // 只有在点击积分计算按钮时才显示积分区域
+                if (analysisType === 'integral') {
+                    selectedChart.showIntegralArea = true;
+                }
+
+                let result = '';
+                switch (analysisType) {
+                    case 'linearFit':
+                        result = calculateLinearFit(selectedData, unit, dataType);
+                        break;
+                    case 'integral':
+                        result = calculateIntegral(selectedData, unit, dataType);
+                        break;
+                    case 'statistics':
+                        result = calculateStatistics(selectedData, unit, dataType);
+                        break;
+                }
+
+                // 更新图表显示
+                currentChart.update();
+                voltageChart.update();
+
+                analysisResults.innerHTML = result;
+                analysisResults.classList.add('show');
+            });
+        });
+
+        // 修改统计分析函数
+        function calculateStatistics(data, unit, dataType) {
+            const values = data.map(point => point.y);
+            const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+            
+            // 根据不同数据类型使用不同的小数位数
+            const decimalPlaces = unit === 'mT' ? 2 : 1;
+            
+            return `
+                <div class="result-container">
+                    <div class="result-item">平均值: ${mean.toFixed(decimalPlaces)} ${unit}</div>
+                    <div class="result-item">最大值: ${Math.max(...values).toFixed(decimalPlaces)} ${unit}</div>
+                    <div class="result-item">最小值: ${Math.min(...values).toFixed(decimalPlaces)} ${unit}</div>
+                    <div class="result-item">数据点数: ${values.length}</div>
+                </div>
+            `;
+        }
+
+        // 添加自动缩放函数
+        function autoScaleCharts() {
+            console.log('执行自动缩放...');
+            
+            // 处理电流图表
+            if (dataBuffer.current.length > 0) {
+                const currentXValues = dataBuffer.current.map(point => point.x);
+                const currentYValues = dataBuffer.current.map(point => point.y);
+                
+                const currentXMin = Math.min(...currentXValues);
+                const currentXMax = Math.max(...currentXValues);
+                const currentYMin = Math.min(...currentYValues);
+                const currentYMax = Math.max(...currentYValues);
+                
+                // 添加一些边距
+                const currentXPadding = (currentXMax - currentXMin) * 0.05;
+                const currentYPadding = Math.max(0.2, (currentYMax - currentYMin) * 0.1);
+                
+                currentChart.options.scales.x.min = currentXMin - currentXPadding;
+                currentChart.options.scales.x.max = currentXMax + currentXPadding;
+                currentChart.options.scales.y.min = currentYMin - currentYPadding;
+                currentChart.options.scales.y.max = currentYMax + currentYPadding;
+                
+                currentChart.update('none');
+            }
+            
+            // 处理电压图表
+            if (dataBuffer.voltage.length > 0) {
+                const voltageXValues = dataBuffer.voltage.map(point => point.x);
+                const voltageYValues = dataBuffer.voltage.map(point => point.y);
+                
+                const voltageXMin = Math.min(...voltageXValues);
+                const voltageXMax = Math.max(...voltageXValues);
+                const voltageYMin = Math.min(...voltageYValues);
+                const voltageYMax = Math.max(...voltageYValues);
+                
+                // 添加一些边距
+                const voltageXPadding = (voltageXMax - voltageXMin) * 0.05;
+                const voltageYPadding = Math.max(0.2, (voltageYMax - voltageYMin) * 0.1);
+                
+                voltageChart.options.scales.x.min = voltageXMin - voltageXPadding;
+                voltageChart.options.scales.x.max = voltageXMax + voltageXPadding;
+                voltageChart.options.scales.y.min = voltageYMin - voltageYPadding;
+                voltageChart.options.scales.y.max = voltageYMax + voltageYPadding;
+                
+                voltageChart.update('none');
+            }
+            
+            console.log('自动缩放完成');
+        }
+
+        // 添加线性拟合函数
+        function calculateLinearFit(data, unit, dataType) {
+            try {
+                // 进行线性拟合计算
+                const n = data.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                
+                data.forEach(point => {
+                    sumX += point.x;
+                    sumY += point.y;
+                    sumXY += point.x * point.y;
+                    sumXX += point.x * point.x;
+                });
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+                
+                // 计算R²（拟合优度）
+                const yMean = sumY / n;
+                let ssTotal = 0, ssResidual = 0;
+                
+                data.forEach(point => {
+                    const yPred = slope * point.x + intercept;
+                    ssTotal += Math.pow(point.y - yMean, 2);
+                    ssResidual += Math.pow(point.y - yPred, 2);
+                });
+                
+                const rSquared = 1 - (ssResidual / ssTotal);
+                
+                // 生成拟合线数据
+                const minX = Math.min(...data.map(p => p.x));
+                const maxX = Math.max(...data.map(p => p.x));
+                
+                const fittedData = [
+                    { x: minX, y: slope * minX + intercept },
+                    { x: maxX, y: slope * maxX + intercept }
+                ];
+                
+                // 修改拟合曲线的样式
+                if (selectedChart.data.datasets.length > 1) {
+                    selectedChart.data.datasets[1].data = fittedData;
+                } else {
+                    selectedChart.data.datasets.push({
+                        label: '线性拟合',
+                        data: fittedData,
+                        borderColor: '#28a745',  // 绿色
+                        borderWidth: 3,          // 线条宽度
+                        pointRadius: 0,
+                        fill: false,
+                        order: 0                 // 确保拟合线在原始数据点之上
+                    });
+                }
+                
+                // 确保原始数据在拟合线下方
+                selectedChart.data.datasets[0].order = 1;
+                
+                selectedChart.update();
+                
+                // 根据单位确定小数位数
+                const decimalPlaces = unit === 'mT' ? 2 : 1;
+                const slopeDecimals = 4;
+                
+                // 返回结果
+                return `
+                    <div class="result-container">
+                        <div class="result-item">拟合方程: y = ${slope.toFixed(slopeDecimals)} × t + ${intercept.toFixed(decimalPlaces)} ${unit}</div>
+                        <div class="result-item">斜率: ${slope.toFixed(slopeDecimals)} ${unit}/s</div>
+                        <div class="result-item">截距: ${intercept.toFixed(decimalPlaces)} ${unit}</div>
+                        <div class="result-item">R²: ${rSquared.toFixed(4)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('线性拟合错误:', error);
+                return '<p>拟合计算出错，请检查数据</p>';
+            }
+        }
+
+        // 添加积分计算函数
+        function calculateIntegral(data, unit, dataType) {
+            try {
+                // 确保数据按时间排序
+                const sortedData = [...data].sort((a, b) => a.x - b.x);
+                
+                // 使用梯形法则计算积分
+                let integral = 0;
+                for (let i = 1; i < sortedData.length; i++) {
+                    const dx = sortedData[i].x - sortedData[i-1].x;
+                    const avgY = (sortedData[i].y + sortedData[i-1].y) / 2;
+                    integral += dx * avgY;
+                }
+                
+                // 显示积分区域
+                selectedChart.showIntegralArea = true;
+                selectedChart.update();
+                
+                // 确定小数位数和积分单位
+                const decimalPlaces = unit === 'mT' ? 2 : 1;
+                const integralUnit = unit === 'mT' ? 'mT·s' : 'mV·s';
+                
+                // 如果是磁感应强度数据，查找对应的电压值
+                let resultHtml = `
+                    <div class="result-container">
+                        <div class="result-item">积分结果: ${integral.toFixed(decimalPlaces)} ${integralUnit}</div>
+                        <div class="result-item">时间范围: ${sortedData[0].x.toFixed(2)}s - ${sortedData[sortedData.length-1].x.toFixed(2)}s</div>
+                        <div class="result-item">数据点数: ${sortedData.length}</div>
+                `;
+                
+                // 仅在磁感应强度数据的情况下显示对应电压最大值
+                if (dataType === '磁感应强度') {
+                    const timeRange = {
+                        min: sortedData[0].x,
+                        max: sortedData[sortedData.length-1].x
+                    };
+                    
+                    const voltageData = dataBuffer.voltage.filter(point => 
+                        point.x >= timeRange.min && point.x <= timeRange.max
+                    );
+                    
+                    if (voltageData.length > 0) {
+                        const maxVoltage = Math.max(...voltageData.map(p => p.y));
+                        resultHtml += `<div class="result-item">对应最大感应电动势: ${maxVoltage.toFixed(1)} mV</div>`;
+                    }
+                }
+                
+                resultHtml += `</div>`;
+                return resultHtml;
+                
+            } catch (error) {
+                console.error('积分计算错误:', error);
+                return '<p>积分计算出错，请检查数据</p>';
+            }
+        }
+    </script>
+</body>
+</html>
