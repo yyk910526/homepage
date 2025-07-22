@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法拉第电磁感应定律（电动势）</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 5px;
+            background-color: #f0f8ff;
+        }
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+        h1 {
+            margin: 0;
+            color: #007bff;
+        }
+        .designer {
+            font-size: 20px;
+            color: #2401e9;
+            margin-left: 20px;
+            font-family: 'Brush Script MT', cursive;
+            font-style: italic;
+        }
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+            margin-bottom: 10px;
+            justify-content: center;
+            width: 100%;
+            padding: 0 20px;
+            transform: translateX(-80px);
+        }
+        #chartContainer {
+            width: 100%;
+            max-width: 1200px;
+            height: 520px;
+            margin: 10px auto 0;
+            position: relative;
+        }
+        .back-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 5px;
+        }
+        #chartContainer {
+            position: relative;
+            width: 90vw;
+            height: 500px;
+        }
+        #dataChart {
+            width: 100%;
+            height: 100%;
+            background-color: white;
+        }
+        #debugInfo {
+            width: 90vw;  /* 修改宽度以匹配图表 */
+            height: 150px;
+            padding: 10px;
+            margin-top: 20px;  /* 添加上边距 */
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+        #drawChartButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 5px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: not-allowed;
+        }
+        #drawChartButton.enabled {
+            background-color: green;
+            cursor: pointer;
+        }
+        #forceValueDisplay {
+            margin-left: 10px;
+            font-size: 24px;  /* 增加字体大小 */
+            font-weight: bold;  /* 加粗字体 */
+        }
+        .drag-mode-button {
+            background-color: #007bff;  /* 蓝色 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        
+        .drag-mode-button.selecting {
+            background-color: #dc3545;  /* 红色 */
+        }
+        .value-display-container {
+            width: 90vw;
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            gap: 20px;
+            justify-content: flex-start;  /* 改为左对齐 */
+        }
+        .value-display-button {
+            padding: 15px 30px;
+            font-size: 28px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            margin-left: 0;  /* 确保没有左边距 */
+        }
+        
+        .value-display-button:hover {
+            background-color: #e9ecef;
+        }
+
+        /* 添加新的样式 */
+        .analysis-buttons {
+            display: flex;
+            gap: 8px;  /* 减小按钮间距 */
+            margin-right: 15px;
+        }
+
+        .analysis-button {
+            padding: 6px 12px;  /* 减小内边距 */
+            font-size: 14px;    /* 减小字体大小 */
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            white-space: nowrap;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+            transition: all 0.2s;
+        }
+
+        .analysis-button.enabled {
+            background-color: #007bff;  /* 改为蓝色背景 */
+            color: white;              /* 白色文字 */
+            border-color: #0056b3;     /* 深蓝色边框 */
+            cursor: pointer;
+        }
+
+        .analysis-button.enabled:hover {
+            background-color: #0056b3;  /* 鼠标悬停时变为深蓝色 */
+            border-color: #004085;
+        }
+
+        .analysis-button:disabled {
+            opacity: 0.8;  /* 禁用时稍微降低透明度 */
+        }
+
+        .analysis-result {
+            font-size: 18px;
+            font-weight: bold;  /* 改为bold加粗字体 */
+            min-width: 180px;
+            text-align: left;
+            color: #007bff;  /* 蓝色文字 */
+            margin-left: 10px;
+            padding: 2px 0;
+            white-space: pre-line; /* 允许换行显示 */
+        }
+
+        /* 添加新按钮样式 */
+        .zoom-mode-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        /* 修改按钮容器样式 */
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 2px;
+            margin-bottom: 10px;
+            justify-content: center;
+            width: 100%;
+            padding: 0 20px;
+            transform: translateX(-100px); /* 整体向左移动100px */
+        }
+
+        /* 添加绿色按钮样式 */
+        .green-button {
+            background-color: #28a745 !important;  /* 使用绿色 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        .green-button:hover {
+            background-color: #218838 !important;  /* 深绿色 */
+        }
+
+        .green-button:disabled {
+            background-color: #6c757d !important;  /* 灰色 */
+            cursor: not-allowed;
+        }
+
+        /* 修改力值显示样式 */
+        .value-display {
+            margin-left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: #e6f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            min-width: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 20px;
+            color: #007bff;
+        }
+
+        /* 修改选择区域的样式 */
+        .selection-plugin {
+            background-color: rgba(255, 200, 150, 0.3); /* 淡橙色，透明度0.3 */
+            border: 1px solid rgba(255, 200, 150, 0.8); /* 淡橙色边框 */
+        }
+
+        /* 修改按钮组样式 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 修改按钮样式，所有按钮默认为绿色 */
+        .green-button, .drag-mode-button, .zoom-mode-button {
+            background-color: #28a745 !important;  /* 使用绿色 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        .green-button:hover, .drag-mode-button:hover, .zoom-mode-button:hover {
+            background-color: #218838 !important;  /* 深绿色 */
+        }
+
+        .green-button:disabled {
+            background-color: #6c757d !important;  /* 灰色 */
+            cursor: not-allowed;
+        }
+
+        /* 只有图像拖动模式按钮在选中状态时变为蓝色 */
+        .drag-mode-button.selecting {
+            background-color: #007bff !important;  /* 蓝色 */
+        }
+
+        /* 添加分析按钮容器的外层样式 */
+        .analysis-container {
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* 添加阈值调节滑动条样式 */
+        .threshold-container {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .threshold-label {
+            margin-right: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .threshold-slider {
+            width: 200px;
+            margin: 0 15px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        
+        .threshold-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .threshold-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            border: none;
+        }
+
+        #applyThresholdButton {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #applyThresholdButton:hover {
+            background-color: #218838;
+        }
+    </style>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js" as="script">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js" as="script">
+    <script>
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // 禁用F12、Ctrl+Shift+I、Ctrl+U
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 85)) {
+                return false;
+            }
+        };
+        
+        // 定义蓝牙设备配置，定义的50个设备可以连接
+        const BLUETOOTH_DEVICES = Array.from({ length: 50 }, (_, i) => ({
+            name: `yykdislab${i + 1}`,
+            serviceUUID: `cddf1001-30f7-4671-8b43-5e40ba53${(i + 1).toString().padStart(4, '0')}`,
+            characteristicUUID: `cddf1002-30f7-4671-8b43-5e40ba53${(i + 1).toString().padStart(4, '0')}`
+        }));
+    </script>
+</head>
+<body>
+    <div class="title-container">
+        <h1>法拉第电磁感应定律（电动势）</h1>
+        <span class="designer">杨燕琨老师设计</span>
+    </div>
+    <div class="button-container">
+        <div class="button-group">
+            <button id="connectButton" class="green-button">连接电压传感器</button>
+            <button id="drawAndDataButton" class="green-button">采集数据</button>
+            <button id="clearDataButton" class="green-button">清除数据</button>
+            <button id="exportDataButton" class="green-button">保存数据</button>
+            <button id="dragModeButton" class="drag-mode-button">图像拖动模式</button>
+            <button id="zoomModeButton" class="zoom-mode-button">整体缩放</button>
+        </div>
+        <div id="valueDisplayButton" class="value-display">电压: 0.0 mV</div>
+    </div>
+    <div id="chartContainer">
+        <canvas id="dataChart"></canvas>
+    </div>
+    
+    <!-- 添加表格和新图表区域 -->
+    <div style="display: flex; gap: 20px; padding: 20px; background-color: #f8f9fa; margin: 10px; border-radius: 5px; margin-top: 60px;">
+        <!-- 数据表格 -->
+        <div style="flex: 1;">
+            <h4 id="tableTitle" style="margin-bottom: 10px; color: #007bff; cursor: pointer;" title="点击切换表格类型">匝数-感应电动势数据记录表</h4>
+            <table id="dataTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 5px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <tr id="firstRow">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e3f2fd; color: #333;">n/匝</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">40</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">80</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">120</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">160</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">200</th>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e3f2fd; font-weight: bold;">E/mV</td>
+                    <td id="cell-1-1" style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white; font-weight: bold;"></td>
+                    <td id="cell-1-2" style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white; font-weight: bold;"></td>
+                    <td id="cell-1-3" style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white; font-weight: bold;"></td>
+                    <td id="cell-1-4" style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white; font-weight: bold;"></td>
+                    <td id="cell-1-5" style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white; font-weight: bold;"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- 新的散点图 -->
+        <div style="flex: 1; position: relative;">
+            <h4 id="chartTitle" style="margin-bottom: 10px; color: #007bff;">n vs EMF关系图</h4>
+            <div style="position: relative; background: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 5px;">
+                <div style="position: absolute; top: 5px; right: 5px; z-index: 100; display: flex; flex-direction: column; gap: 3px;">
+                    <button id="fitToggleButton" style="padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;">线性拟合</button>
+                    <button id="deleteDataButton" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;">删除数据</button>
+                </div>
+                <canvas id="scatterChart" width="400" height="300" style="display: block; margin: 0 auto;"></canvas>
+                <div id="fitEquation" style="margin-top: 5px; font-size: 16px; color: #28a745; font-weight: bold; text-align: center; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        let chart;
+        let bluetoothDevice;
+        let characteristic;
+        let receivingData = false;  // 改为默认不接收数据
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let lastUpdateTime = 0;
+        const updateInterval = 100; // 更新间隔，单位为毫秒
+        const maxDataPoints = 1000; // 最大数据点数量
+        const connectButton = document.getElementById('connectButton');
+        const toggleDataButton = document.getElementById('toggleDataButton');
+        const debugInfo = document.getElementById('debugInfo');
+        const ctx = document.getElementById('dataChart').getContext('2d');
+        const bufferSize = 10000; // 保持较大的缓冲大小
+        let dataBuffer = [];
+        let lastTimeValue = 0;
+        let updateCounter = 0;
+        const updateFrequency = 10; // 每接收10个数据点更新一次图表
+        const drawChartButton = document.getElementById('drawChartButton');
+        let isDrawingChart = false;
+
+        let animationFrameId = null;
+        let isDragging = false;
+        let startX, startY;
+        let startXMin, startXMax, startYMin, startYMax;
+
+        let lastDrawnDataIndex = 0;
+
+        let isSelectMode = false;
+        let selectionStart = null;
+        let selectionEnd = null;
+        let selectedData = null;
+
+        // 修改全局变量，将 isForceMode 改为 displayMode
+        let displayMode = 'force';  // 可能的值: 'force', 'voltage', 'current'
+
+        // 添加新的全局变量
+        let selectionVisible = false;  // 控制选择框的显状态
+
+        // 添加的全局变量
+        let fittedLine = null;
+
+        // 首先在全局变量区域添加 isFirstDraw 的声明
+        let isFirstDraw = true;  // 添加到其他全局变量的位置
+
+        // 添加新全局变量
+        let isXAxisZoomMode = false;  // false表示整体缩放，true表示横轴缩放
+        
+        // 新增变量
+        let scatterChart;
+        let extractedData = [];  // 存储提取的数据
+        let currentColumn = 1;   // 当前填充的列
+        let lastAnalysisAverage = null;  // 存储最后一次分析的平均值
+        let showFitLine = false; // 是否显示拟合线
+        let isAreaMode = true;   // true表示匝数模式，false表示有效面积模式
+
+        // 添加缩放模式切换按钮的事件监听器
+        const zoomModeButton = document.getElementById('zoomModeButton');
+        zoomModeButton.addEventListener('click', () => {
+            isXAxisZoomMode = !isXAxisZoomMode;
+            zoomModeButton.textContent = isXAxisZoomMode ? '横轴缩放' : '整体缩放';
+        });
+
+        // 修改 selectionPlugin 的代码
+        const selectionPlugin = {
+            id: 'selection',
+            beforeDraw: (chart) => {
+                if ((isSelectMode || selectionVisible) && selectionStart && selectionEnd) {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    
+                    // 获取选择框的像素坐标
+                    const startX = chart.scales.x.getPixelForValue(selectionStart.x);
+                    const endX = chart.scales.x.getPixelForValue(selectionEnd.x);
+                    
+                    // 绘制选择框
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(135, 206, 235, 0.2)'; // 淡蓝色填充
+                    ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)'; // 淡蓝色边框
+                    ctx.lineWidth = 1;
+                    
+                    // 绘制填充区域
+                    ctx.fillRect(
+                        Math.min(startX, endX),
+                        chartArea.top,
+                        Math.abs(endX - startX),
+                        chartArea.bottom - chartArea.top
+                    );
+                    
+                    // 绘制边框
+                    ctx.strokeRect(
+                        Math.min(startX, endX),
+                        chartArea.top,
+                        Math.abs(endX - startX),
+                        chartArea.bottom - chartArea.top
+                    );
+                    
+                    ctx.restore();
+                }
+            }
+        };
+
+        // 添加积分区域插件
+        const integralAreaPlugin = {
+            id: 'integralArea',
+            beforeDraw: (chart) => {
+                if (chart.showIntegralArea && selectedData) {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)'; // 淡红色填充
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // 淡红色边框
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    
+                    // 移动到起始点（x轴上）
+                    const firstPoint = selectedData[0];
+                    let startX = chart.scales.x.getPixelForValue(firstPoint.x);
+                    let startY = chart.scales.y.getPixelForValue(0); // x轴位置
+                    
+                    ctx.moveTo(startX, startY);
+                    
+                    // 绘制数据点路径
+                    selectedData.forEach(point => {
+                        const x = chart.scales.x.getPixelForValue(point.x);
+                        const y = chart.scales.y.getPixelForValue(point.y);
+                        ctx.lineTo(x, y);
+                    });
+                    
+                    // 连接回x轴
+                    const lastPoint = selectedData[selectedData.length - 1];
+                    let endX = chart.scales.x.getPixelForValue(lastPoint.x);
+                    ctx.lineTo(endX, startY);
+                    
+                    // 闭合路径
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                }
+            }
+        };
+
+        // 在初始化图表时注册插件
+        function initializeChart() {
+            // 注册插件
+            Chart.register(selectionPlugin);
+            Chart.register(integralAreaPlugin);
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '电压',
+                        data: [],
+                        borderColor: '#007bff',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#007bff',
+                        showLine: true,
+                        pointStyle: 'circle',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end'
+                        },
+                        
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'xy',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                            },
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '时间 (s)'
+                            },
+                            min: 0,
+                            max: 10
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '电压 (mV)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            ctx.canvas.addEventListener('wheel', handleWheel);
+            // 添加鼠标事件监听器
+            ctx.canvas.addEventListener('mousedown', startDragging);
+            ctx.canvas.addEventListener('mousemove', drag);
+            ctx.canvas.addEventListener('mouseup', stopDragging);
+            ctx.canvas.addEventListener('mouseleave', stopDragging);
+            
+            // 修改右键事件监听器
+            ctx.canvas.addEventListener('contextmenu', (e) => {
+                e.preventDefault();  // 阻止默认右键菜单
+                
+                if (selectionStart && selectionEnd) {
+                    // 清除选择框
+                    selectionStart = null;
+                    selectionEnd = null;
+                    selectionVisible = false;
+                    selectedData = null;
+                    
+                    // 清除拟合线
+                    if (chart.data.datasets.length > 1) {
+                        chart.data.datasets.pop();  // 移除拟合线据集
+                    }
+                    fittedLine = null;  // 清除拟合线数据
+                    
+                    // 清除分析结果显示
+                    const analysisResult = document.querySelector('.analysis-result');
+                    if (analysisResult) {
+                        analysisResult.textContent = '';
+                    }
+                    
+                    // 更按钮状态
+                    updateAnalysisButtons();
+                    
+                    // 更新图表
+                    chart.update();
+                }
+                
+                return false;
+            });
+            
+            // 初始化散点图
+            initializeScatterChart();
+        }
+
+        function skippedSegment(ctx, value) {
+            if (ctx.p0.skip || ctx.p1.skip) return value;
+            const diff = Math.abs(ctx.p0.parsed.x - ctx.p1.parsed.x);
+            return diff > 1 ? false : undefined;
+        }
+        
+        // 初始化散点图
+        function initializeScatterChart() {
+            const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+            scatterChart = new Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '实验数据',
+                        data: [],
+                        backgroundColor: '#dc3545',
+                        borderColor: '#dc3545',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        showLine: false
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'n (匝)',
+                                padding: 8
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                drawBorder: true
+                            },
+                            ticks: {
+                                padding: 5
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '感应电动势 (mV)',
+                                padding: 8
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                drawBorder: true
+                            },
+                            ticks: {
+                                padding: 5
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 添加按钮事件监听器
+            setupNewButtonListeners();
+        }
+        
+        // 设置新按钮的事件监听器
+        function setupNewButtonListeners() {
+            // 拟合控制按钮
+            const fitToggleButton = document.getElementById('fitToggleButton');
+            fitToggleButton.addEventListener('click', function() {
+                showFitLine = !showFitLine;
+                this.textContent = showFitLine ? '取消拟合' : '线性拟合';
+                this.style.backgroundColor = showFitLine ? '#dc3545' : '#28a745';
+                updateScatterChart();
+            });
+            
+            // 删除数据按钮
+            const deleteButton = document.getElementById('deleteDataButton');
+            deleteButton.addEventListener('click', function() {
+                if (currentColumn > 1) {
+                    currentColumn--;
+                    
+                    // 清空表格单元格
+                    const dataCell = document.getElementById(`cell-1-${currentColumn}`);
+                    if (dataCell) {
+                        dataCell.textContent = '';
+                    }
+                    
+                    // 从散点图中删除最后一个数据点
+                    if (extractedData.length > 0) {
+                        extractedData.pop();
+                        updateScatterChart();
+                    }
+                    
+                    // 重新启用提取按钮
+                    const extractButton = document.getElementById('extractDataButton');
+                    if (extractButton) {
+                        extractButton.textContent = '提取数据';
+                        extractButton.disabled = false;
+                        extractButton.classList.add('enabled');
+                    }
+                }
+            });
+            
+            // 表格标题点击切换
+            const tableTitle = document.getElementById('tableTitle');
+            tableTitle.addEventListener('click', function() {
+                toggleTableMode();
+            });
+        }
+        
+        // 切换表格模式
+        function toggleTableMode() {
+            isAreaMode = !isAreaMode;
+            const tableTitle = document.getElementById('tableTitle');
+            const firstRow = document.getElementById('firstRow');
+            const chartTitle = document.getElementById('chartTitle');
+            
+            // 清空现有数据
+            extractedData = [];
+            currentColumn = 1;
+            // 清空所有数据列（最多5列）
+            for (let i = 1; i <= 5; i++) {
+                const cell = document.getElementById(`cell-1-${i}`);
+                if (cell) cell.textContent = '';
+            }
+            
+            if (isAreaMode) {
+                // 匝数模式
+                tableTitle.textContent = '匝数-感应电动势数据记录表';
+                chartTitle.textContent = 'n vs EMF关系图';
+                firstRow.innerHTML = `
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e3f2fd; color: #333;">n/匝</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">40</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">80</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">120</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">160</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">200</th>
+                `;
+                scatterChart.options.scales.x.title.text = 'n (匝)';
+                // 显示第5列
+                const cell5 = document.getElementById('cell-1-5');
+                if (cell5) cell5.style.display = 'table-cell';
+            } else {
+                // 有效面积模式
+                tableTitle.textContent = '有效面积-感应电动势数据记录表';
+                chartTitle.textContent = 'S vs EMF关系图';
+                firstRow.innerHTML = `
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e3f2fd; color: #333;">S/cm²</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">4</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">16</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">36</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: white;">64</th>
+                `;
+                scatterChart.options.scales.x.title.text = '有效面积 (cm²)';
+                // 隐藏第5列
+                const cell5 = document.getElementById('cell-1-5');
+                if (cell5) cell5.style.display = 'none';
+            }
+            
+            // 更新散点图
+            updateScatterChart();
+        }
+        
+        // 更新散点图
+        function updateScatterChart() {
+            // 更新数据点
+            scatterChart.data.datasets[0].data = [...extractedData];
+            
+            const fitEquationDiv = document.getElementById('fitEquation');
+            
+            // 处理拟合线
+            if (showFitLine && extractedData.length >= 2) {
+                // 计算线性拟合
+                const fitResult = calculateLinearFitForScatter(extractedData);
+                
+                // 添加或更新拟合线数据集
+                if (scatterChart.data.datasets.length === 1) {
+                    scatterChart.data.datasets.push({
+                        label: '线性拟合',
+                        data: fitResult.fittedData,
+                        borderColor: '#28a745',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        showLine: true,
+                        tension: 0
+                    });
+                } else {
+                    scatterChart.data.datasets[1].data = fitResult.fittedData;
+                }
+                
+                // 显示拟合方程
+                fitEquationDiv.style.display = 'block';
+                const xLabel = isAreaMode ? 'n' : 'S';
+                fitEquationDiv.textContent = `拟合方程: E = ${fitResult.slope.toFixed(4)} × ${xLabel} + ${fitResult.intercept.toFixed(2)}`;
+            } else {
+                // 移除拟合线
+                if (scatterChart.data.datasets.length > 1) {
+                    scatterChart.data.datasets.pop();
+                }
+                
+                // 隐藏拟合方程
+                fitEquationDiv.style.display = 'none';
+            }
+            
+            scatterChart.update();
+        }
+        
+        // 为散点图计算线性拟合
+        function calculateLinearFitForScatter(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            
+            data.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumXX += point.x * point.x;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            // 生成拟合线数据，确保线条接触到坐标轴
+            const xMin = 0; // 从原点开始
+            const xMax = Math.max(...data.map(p => p.x)) * 1.2; // 稍微延长
+            
+            const fittedData = [
+                { x: xMin, y: slope * xMin + intercept },
+                { x: xMax, y: slope * xMax + intercept }
+            ];
+            
+            return { slope, intercept, fittedData };
+        }
+
+        // 修改接函数
+        async function connectToForceMeter() {
+            try {
+                await disconnectFromForceMeter(); // 确保之前的连接已经断开
+
+                if ('bluetooth' in navigator && 'getAvailability' in navigator.bluetooth) {
+                    const isBluetoothAvailable = await navigator.bluetooth.getAvailability();
+                    if (!isBluetoothAvailable) {
+                        throw new Error('蓝牙不可用');
+                    }
+                }
+
+                // 构建设备过滤器和服务数组
+                const filters = BLUETOOTH_DEVICES.map(device => ({ name: device.name }));
+                const optionalServices = BLUETOOTH_DEVICES.map(device => device.serviceUUID);
+
+                console.log('开始请求蓝牙设备...'); // 添加调试日志
+                console.log('可用设备名称:', filters.map(f => f.name)); // 显示可用设备名称
+
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: filters,
+                    optionalServices: optionalServices
+                });
+
+                console.log('选择的设备:', bluetoothDevice.name); // 添加调试日志
+
+                const server = await bluetoothDevice.gatt.connect();
+                console.log('GATT服务器已连接'); // 添加调试日志
+
+                // 根据连接的设备名称找到对应的配置
+                const deviceConfig = BLUETOOTH_DEVICES.find(device => device.name === bluetoothDevice.name);
+                if (!deviceConfig) {
+                    throw new Error('未找到匹配的设备配置');
+                }
+
+                console.log('使用设备配置:', deviceConfig); // 添加调试日志
+
+                const service = await server.getPrimaryService(deviceConfig.serviceUUID);
+                characteristic = await service.getCharacteristic(deviceConfig.characteristicUUID);
+
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
+
+                // 更新按钮状态
+                connectButton.textContent = '断开电压传感器';
+                connectButton.removeEventListener('click', connectToForceMeter);
+                connectButton.addEventListener('click', disconnectFromForceMeter);
+
+                // 启用绘图按钮
+                drawAndDataButton.disabled = false;
+                drawAndDataButton.classList.add('enabled');
+                isFirstDraw = true;
+
+                // 添加断开连接监听器
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+            } catch (error) {
+                console.error('蓝牙连接错误:', error);
+                await disconnectFromForceMeter();
+                // 重置按钮状态
+                drawAndDataButton.disabled = true;
+                drawAndDataButton.classList.remove('enabled');
+            }
+        }
+
+        // 修改断开连接函数
+        async function disconnectFromForceMeter() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                // 如果正在绘图，先停止绘图
+                if (isDrawingChart) {
+                    isDrawingChart = false;
+                    receivingData = false;
+                    drawAndDataButton.textContent = '开始绘图';
+                    if (characteristic) {
+                        try {
+                            await characteristic.stopNotifications();
+                        } catch (error) {
+                            console.error('停止通知失败:', error);
+                        }
+                    }
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                }
+
+                // 断开连接
+                bluetoothDevice.gatt.disconnect();
+                bluetoothDevice.removeEventListener('gattserverdisconnected', onDisconnected);
+            }
+            
+            // 重置状态
+            onDisconnected();
+        }
+
+        // 添加断开接处理函数
+        function onDisconnected() {
+            console.log('设备已断开连接');
+            
+            // 重置按钮状态
+            connectButton.textContent = '连接电压传感器';
+            connectButton.removeEventListener('click', disconnectFromForceMeter);
+            connectButton.addEventListener('click', connectToForceMeter);
+
+            // 禁用绘图按钮
+            drawAndDataButton.disabled = true;
+            drawAndDataButton.classList.remove('enabled');
+            isFirstDraw = true;
+
+            // 重置变量
+            bluetoothDevice = null;
+            characteristic = null;
+        }
+
+        // 确保在页面加载时添加初始事件听器
+        connectButton.addEventListener('click', connectToForceMeter);
+
+        function toggleDataReception() {
+            if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+                console.error('请先接设备');
+                return;
+            }
+
+            receivingData = !receivingData;
+            toggleDataButton.textContent = receivingData ? '停止获取数据' : '开始获取数据';
+            
+            if (receivingData) {
+                // 确保通知已启
+                if (characteristic) {
+                    characteristic.startNotifications()
+                        .then(() => {
+                            console.log('数据通知已启用');
+                        })
+                        .catch(error => {
+                            console.error('启用通知失败:', error);
+                            receivingData = false;
+                            toggleDataButton.textContent = '开始获取数据';
+                        });
+                }
+            } else {
+                if (characteristic) {
+                    characteristic.stopNotifications()
+                        .then(() => {
+                            console.log('数据通知已停止');
+                        })
+                        .catch(error => {
+                            console.error('停止通知失败:', error);
+                        });
+                }
+            }
+        }
+
+        function handleCharacteristicValueChanged(event) {
+            if (!receivingData) return;
+
+            try {
+                const value = event.target.value;
+                const dataView = new DataView(value.buffer);
+                const forceValue = dataView.getFloat32(0, true);
+                const timeValue = dataView.getFloat32(4, true);
+
+                // 更新电压值显示 (已经是mV单位)
+                updateForceValueDisplay(forceValue);
+
+                // 如果正在绘图，则添加数据点 (数据已经是mV单位)
+                if (isDrawingChart) {
+                    dataBuffer.push({ x: timeValue, y: forceValue });
+                    if (dataBuffer.length > bufferSize) {
+                        dataBuffer.shift();
+                    }
+
+                    // 立即请求更新图表
+                    if (!animationFrameId) {
+                        animationFrameId = requestAnimationFrame(updateChartAndDisplay);
+                    }
+                }
+            } catch (error) {
+                console.error('数据处理错误:', error);
+            }
+        }
+
+        function updateChartAndDisplay() {
+            if (dataBuffer.length > 0) {
+                // 更新数据集
+                chart.data.datasets[0].data = [...dataBuffer];
+
+                // 计算坐标轴范围
+                const xValues = dataBuffer.map(point => point.x);
+                const yValues = dataBuffer.map(point => point.y);
+                const maxX = Math.max(...xValues);
+                minY = Math.min(...yValues);
+                maxY = Math.max(...yValues);
+                const yRange = maxY - minY;
+
+                // 只在非拖动状态下动调整视
+                if (!isDragging) {
+                    chart.options.scales.x.min = Math.max(0, maxX - 10);
+                    chart.options.scales.x.max = maxX + 2;
+                    chart.options.scales.y.min = minY - yRange * 0.1;
+                    chart.options.scales.y.max = maxY + yRange * 0.1;
+                }
+
+                // 更新图表
+                chart.update('none');
+            }
+
+            // 如果仍在绘图，继续请求下一帧
+            if (isDrawingChart) {
+                animationFrameId = requestAnimationFrame(updateChartAndDisplay);
+            } else {
+                animationFrameId = null;
+            }
+        }
+
+        function handleWheel(e) {
+            if (!chart.chartArea) {
+                return;
+            }
+
+            e.preventDefault();
+
+            // 获取鼠标在图表区域的相对位置
+            const rect = e.target.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // 检查鼠标是否在图表区域内
+            if (mouseX < chart.chartArea.left || mouseX > chart.chartArea.right ||
+                mouseY < chart.chartArea.top || mouseY > chart.chartArea.bottom) {
+                return;
+            }
+
+            // 计算鼠标位置在数据坐标系中的位置
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            
+            // 获取鼠标位置对应的数据值
+            const mouseXValue = xScale.getValueForPixel(mouseX);
+            const mouseYValue = yScale.getValueForPixel(mouseY);
+
+            // 设置缩放因子
+            const zoomIntensity = 0.1;
+            const zoomFactor = e.deltaY > 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+
+            // 计算新的范围
+            const xMin = xScale.min;
+            const xMax = xScale.max;
+            const yMin = yScale.min;
+            const yMax = yScale.max;
+
+            // 据缩放模式计算新的范围
+            const newXMin = mouseXValue - (mouseXValue - xMin) * zoomFactor;
+            const newXMax = mouseXValue + (xMax - mouseXValue) * zoomFactor;
+
+            // 更新图表范围
+            chart.options.scales.x.min = newXMin;
+            chart.options.scales.x.max = newXMax;
+
+            // 只在整体缩放模式下更新Y轴范围
+            if (!isXAxisZoomMode) {
+                const newYMin = mouseYValue - (mouseYValue - yMin) * zoomFactor;
+                const newYMax = mouseYValue + (yMax - mouseYValue) * zoomFactor;
+                chart.options.scales.y.min = newYMin;
+                chart.options.scales.y.max = newYMax;
+            }
+
+            chart.update('none');
+        }
+
+        // 修改 updateForceValueDisplay 函数
+        function updateForceValueDisplay(value) {
+            const valueDisplayElement = document.getElementById('valueDisplayButton');
+            // 数据已经是mV单位，只需保留1位小数
+            valueDisplayElement.textContent = `电压: ${value.toFixed(1)} mV`;
+        }
+
+        function startDragging(e) {
+            // 只在左键点击时开始拖动或选择
+            if (e.button !== 0) {
+                e.preventDefault();
+                return;
+            }
+            
+            isDragging = true;
+            
+            if (isSelectMode) {
+                const rect = e.target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                selectionStart = {
+                    x: chart.scales.x.getValueForPixel(x),
+                    y: chart.scales.y.getValueForPixel(y)
+                };
+                selectionEnd = selectionStart;
+                selectedData = null;
+            } else {
+                startX = e.offsetX;
+                startY = e.offsetY;
+                startXMin = chart.scales.x.min;
+                startXMax = chart.scales.x.max;
+                startYMin = chart.scales.y.min;
+                startYMax = chart.scales.y.max;
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+
+            if (isSelectMode) {
+                const rect = e.target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                selectionEnd = {
+                    x: chart.scales.x.getValueForPixel(x),
+                    y: chart.scales.y.getValueForPixel(y)
+                };
+                chart.update('none'); // 使用'none'来加快更新速度
+            } else {
+                const dx = e.offsetX - startX;
+                const dy = e.offsetY - startY;
+                const chartArea = chart.chartArea;
+                const xRange = startXMax - startXMin;
+                const yRange = startYMax - startYMin;
+                
+                const xShift = (dx / chartArea.width) * xRange;
+                const yShift = (dy / chartArea.height) * yRange;
+                
+                chart.options.scales.x.min = startXMin - xShift;
+                chart.options.scales.x.max = startXMax - xShift;
+                chart.options.scales.y.min = startYMin + yShift;
+                chart.options.scales.y.max = startYMax + yShift;
+                chart.update('none');
+            }
+        }
+
+        function stopDragging(e) {
+            if (!isDragging) return;
+            
+            if (isSelectMode && selectionStart && selectionEnd) {
+                const minX = Math.min(selectionStart.x, selectionEnd.x);
+                const maxX = Math.max(selectionStart.x, selectionEnd.x);
+                
+                // 选择数据
+                selectedData = dataBuffer.filter(point => 
+                    point.x >= minX && point.x <= maxX
+                );
+                
+                selectionVisible = true;
+                
+                // 更新分析按钮状态
+                updateAnalysisButtons();
+                
+                // 如果没有选中数据，禁用所有分析按钮
+                if (!selectedData || selectedData.length === 0) {
+                    const buttons = document.querySelectorAll('.analysis-button');
+                    buttons.forEach(button => {
+                        button.classList.remove('enabled');
+                        button.disabled = true;
+                    });
+                }
+            }
+            
+            isDragging = false;
+        }
+
+        initializeChart();
+
+        const drawAndDataButton = document.getElementById('drawAndDataButton');
+        
+        drawAndDataButton.addEventListener('click', () => {
+            if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+                console.error('请先连接设备');
+                return;
+            }
+
+            isDrawingChart = !isDrawingChart;
+            receivingData = isDrawingChart;  // 同步数据接收状
+
+            if (isDrawingChart) {
+                // 开始绘图和数据接收
+                if (isFirstDraw) {
+                    dataBuffer = [];
+                    updateCounter = 0;
+                    chart.data.datasets[0].data = [];
+                    minY = Infinity;
+                    maxY = -Infinity;
+                    chart.update();
+                    isFirstDraw = false;
+                }
+                
+                drawAndDataButton.textContent = '停止采集';
+                
+                // 启动数据通知
+                if (characteristic) {
+                    characteristic.startNotifications()
+                        .then(() => {
+                            console.log('数据通知已启用');
+                            if (!animationFrameId) {
+                                animationFrameId = requestAnimationFrame(updateChartAndDisplay);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('启用通知失败:', error);
+                            isDrawingChart = false;
+                            receivingData = false;
+                            drawAndDataButton.textContent = '采集数据';
+                        });
+                }
+            } else {
+                // 停止绘图和数据接收
+                drawAndDataButton.textContent = '采集数据';
+                if (characteristic) {
+                    characteristic.stopNotifications()
+                        .then(() => {
+                            console.log('数据通知已停止');
+                        })
+                        .catch(error => {
+                            console.error('停止通知失败:', error);
+                        });
+                }
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        });
+
+        document.getElementById('clearDataButton').addEventListener('click', () => {
+            dataBuffer = [];
+            lastTimeValue = 0;
+            updateCounter = 0;
+            chart.data.datasets[0].data = [];
+            minY = Infinity;
+            maxY = -Infinity;
+            chart.update();
+            debugInfo.textContent += '\n[调试] 数据已清除';
+            isFirstDraw = true;  // 清除数据时重置标志
+        });
+
+        // 简化导出数据功能
+        document.getElementById('exportDataButton').addEventListener('click', () => {
+            const dataToExport = selectedData || dataBuffer;
+            const data = dataToExport.map(point => [point.x, point.y]);
+            
+            const worksheet = XLSX.utils.aoa_to_sheet([['时间 (s)', '电压 (mV)'], ...data]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '电压传感器数据');
+            XLSX.writeFile(workbook, '电压传感器数据.xlsx');
+        });
+
+        const dragModeButton = document.getElementById('dragModeButton');
+        dragModeButton.addEventListener('click', () => {
+            isSelectMode = !isSelectMode;
+            isDragging = false;
+            
+            // 创建或获取分析按钮容器和结果显示区域
+            let analysisButtonsContainer = document.querySelector('.analysis-buttons');
+            let analysisResult = document.querySelector('.analysis-result');
+            
+            if (!analysisButtonsContainer || !analysisResult) {
+                // 创建外层容器
+                const containerDiv = document.createElement('div');
+                containerDiv.className = 'analysis-container';
+                
+                // 创建分析按钮容器
+                analysisButtonsContainer = document.createElement('div');
+                analysisButtonsContainer.className = 'analysis-buttons';
+                analysisButtonsContainer.innerHTML = `
+                    <button id="fitLineButton" class="analysis-button disabled">线性拟合</button>
+                    <button id="averageButton" class="analysis-button disabled">平均值</button>
+                    <button id="maxButton" class="analysis-button disabled">最大值</button>
+                    <button id="minButton" class="analysis-button disabled">最小值</button>
+                    <button id="areaButton" class="analysis-button disabled">区域积分</button>
+                    <button id="peakValleyButton" class="analysis-button disabled">峰谷均值</button>
+                    <button id="extractDataButton" class="analysis-button disabled">提取数据</button>
+                `;
+                
+                // 创建分析结果显示区域
+                analysisResult = document.createElement('div');
+                analysisResult.className = 'analysis-result';
+                
+                // 创建阈值调节滑动条容器
+                const thresholdContainer = document.createElement('div');
+                thresholdContainer.className = 'threshold-container';
+                thresholdContainer.style.display = 'none'; // 默认隐藏
+                thresholdContainer.innerHTML = `
+                    <div class="threshold-label">峰谷检测阈值: <span id="thresholdValue">20</span>%</div>
+                    <input type="range" id="thresholdSlider" min="1" max="100" value="20" class="threshold-slider">
+                    <button id="applyThresholdButton">应用</button>
+                `;
+                
+                // 将按钮和结果添加到容器中
+                containerDiv.appendChild(analysisButtonsContainer);
+                containerDiv.appendChild(thresholdContainer);
+                containerDiv.appendChild(analysisResult);
+                
+                // 将整个容器添加到图表容器的顶部
+                const chartContainer = document.getElementById('chartContainer');
+                chartContainer.insertBefore(containerDiv, chartContainer.firstChild);
+                
+                // 添加事件监听器
+                document.getElementById('fitLineButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleFitLine();
+                });
+                document.getElementById('averageButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleAverage();
+                });
+                document.getElementById('maxButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleMax();
+                });
+                document.getElementById('minButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleMin();
+                });
+                document.getElementById('areaButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleArea();
+                });
+                document.getElementById('peakValleyButton').addEventListener('click', function() {
+                    // 显示阈值调节滑动条
+                    thresholdContainer.style.display = 'flex';
+                    // 执行峰谷分析
+                    handlePeakValley();
+                });
+                document.getElementById('extractDataButton').addEventListener('click', function() {
+                    thresholdContainer.style.display = 'none';
+                    handleExtractData();
+                });
+                
+                // 滑动条事件监听
+                document.getElementById('thresholdSlider').addEventListener('input', function() {
+                    const value = this.value;
+                    document.getElementById('thresholdValue').textContent = value;
+                });
+                
+                // 应用阈值按钮
+                document.getElementById('applyThresholdButton').addEventListener('click', function() {
+                    handlePeakValley();
+                });
+            }
+            
+            // 显示/隐藏分析按钮和结果
+            analysisButtonsContainer.style.display = isSelectMode ? 'flex' : 'none';
+            analysisResult.style.display = isSelectMode ? 'block' : 'none';
+            
+            if (!isSelectMode) {
+                // 退出选择模式时清除选择框、拟合线以及隐藏阈值调节滑动条
+                selectionStart = null;
+                selectionEnd = null;
+                selectionVisible = false;
+                selectedData = null;
+                if (chart.data.datasets.length > 1) {
+                    chart.data.datasets.pop();
+                }
+                analysisResult.textContent = '';
+                document.querySelector('.threshold-container').style.display = 'none';
+                updateAnalysisButtons();
+                chart.update();
+            }
+            
+            dragModeButton.textContent = isSelectMode ? '数据处理模式' : '图像拖动模式';
+            dragModeButton.classList.toggle('selecting', isSelectMode);
+        });
+
+        // 修改数据处理函数
+        function handleFitLine() {
+            if (!selectedData || selectedData.length < 2) return;
+            
+            // 隐藏阈值调节滑动条
+            document.querySelector('.threshold-container').style.display = 'none';
+            
+            // 隐藏积分区域
+            chart.showIntegralArea = false;
+            
+            const { slope, intercept } = linearFit(selectedData);
+            const minX = Math.min(...selectedData.map(p => p.x));
+            const maxX = Math.max(...selectedData.map(p => p.x));
+            
+            // 创建拟合线数据
+            const fittedLine = [
+                { x: minX, y: slope * minX + intercept },
+                { x: maxX, y: slope * maxX + intercept }
+            ];
+            
+            // 更新图表，使用更粗的线条
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets[1].data = fittedLine;
+                chart.data.datasets[1].label = '线性拟合';  // 更新标签
+            } else {
+                chart.data.datasets.push({
+                    label: '线性拟合',
+                    data: fittedLine,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 4,  // 增加线条宽度
+                    pointRadius: 0
+                });
+            }
+            
+            // 显示拟合公式，保留1位小数
+            document.querySelector('.analysis-result').textContent = 
+                `拟合方程: y = ${slope.toFixed(1)}x + ${intercept.toFixed(1)}`;
+            
+            chart.update();
+        }
+
+        function handleAverage() {
+            if (!selectedData || selectedData.length === 0) return;
+            
+            // 隐藏阈值调节滑动条
+            const thresholdContainer = document.querySelector('.threshold-container');
+            if (thresholdContainer) {
+                thresholdContainer.style.display = 'none';
+            }
+            
+            // 隐藏积分区域
+            chart.showIntegralArea = false;
+            
+            // 移除拟合线
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets.pop();
+            }
+            const average = selectedData.reduce((sum, point) => sum + point.y, 0) / selectedData.length;
+            lastAnalysisAverage = Math.abs(average); // 保存平均值的绝对值
+            
+            const analysisResult = document.querySelector('.analysis-result');
+            if (analysisResult) {
+                analysisResult.textContent = `平均值: ${average.toFixed(1)} mV`;
+            }
+            chart.update();
+        }
+        
+        // 提取数据函数
+        function handleExtractData() {
+            if (lastAnalysisAverage === null) {
+                alert('请先进行平均值分析');
+                return;
+            }
+            
+            const maxColumns = isAreaMode ? 5 : 4; // 匝数模式5列，面积模式4列
+            if (currentColumn <= maxColumns) {
+                // 在表格中填入数据
+                const dataCell = document.getElementById(`cell-1-${currentColumn}`);
+                dataCell.textContent = lastAnalysisAverage.toFixed(1);
+                
+                // 获取对应的x值
+                let xValue;
+                if (isAreaMode) {
+                    const xValues = [40, 80, 120, 160, 200];
+                    xValue = xValues[currentColumn - 1];
+                } else {
+                    const xValues = [4, 16, 36, 64];
+                    xValue = xValues[currentColumn - 1];
+                }
+                
+                // 在散点图中添加数据点
+                extractedData.push({
+                    x: xValue,
+                    y: lastAnalysisAverage
+                });
+                
+                updateScatterChart();
+                currentColumn++;
+                
+                if (currentColumn > maxColumns) {
+                    const extractButton = document.getElementById('extractDataButton');
+                    if (extractButton) {
+                        extractButton.textContent = '表格已满';
+                        extractButton.disabled = true;
+                        extractButton.classList.remove('enabled');
+                    }
+                }
+            }
+        }
+
+        function handleMax() {
+            if (!selectedData || selectedData.length === 0) return;
+            
+            // 隐藏阈值调节滑动条
+            document.querySelector('.threshold-container').style.display = 'none';
+            
+            // 隐藏积分区域
+            chart.showIntegralArea = false;
+            
+            // 移除拟合线
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets.pop();
+            }
+            const maxValue = Math.max(...selectedData.map(point => point.y));
+            document.querySelector('.analysis-result').textContent = `最大值: ${maxValue.toFixed(1)} mV`;
+            chart.update();
+        }
+
+        function handleArea() {
+            if (!selectedData || selectedData.length < 2) return;
+            
+            // 隐藏阈值调节滑动条
+            document.querySelector('.threshold-container').style.display = 'none';
+            
+            // 移除拟合线
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets.pop();
+            }
+            const area = calculateArea(selectedData);
+            
+            // 显示积分区域
+            chart.showIntegralArea = true;
+            chart.update();
+            
+            document.querySelector('.analysis-result').textContent = `积分结果: ${area.toFixed(1)} mV·s`;
+        }
+
+        // 添加线性拟合函数
+        function linearFit(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            
+            data.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumXX += point.x * point.x;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            return { slope, intercept };
+        }
+
+        // 修改更新分析按钮状态的函数
+        function updateAnalysisButtons() {
+            const buttons = document.querySelectorAll('.analysis-button');
+            const enabled = selectedData && selectedData.length > 0;
+            buttons.forEach(button => {
+                button.classList.toggle('enabled', enabled);
+                button.disabled = !enabled;
+            });
+        }
+
+        // 修改计算面积的函数
+        function calculateArea(data) {
+            if (!data || data.length < 2) return 0;
+            
+            // 使用梯形法则计算面积，保留正负
+            let area = 0;
+            for (let i = 1; i < data.length; i++) {
+                // 计算两点之间的梯形面积
+                const width = data[i].x - data[i-1].x;
+                const height = (data[i].y + data[i-1].y) / 2;
+                area += width * height;  // 不取绝对值，保留正负
+            }
+            
+            return area;  // 返回实际值（可能正或负）
+        }
+
+        // 简化图表配置
+        function initChart() {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '电压',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end'
+                        },
+                        
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy'
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: '时间 (s)',
+                                font: {
+                                    size: 16  // 增大轴标题字体
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 14  // 增大刻度字体
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '电压 (mV)',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 添加最小值处理函数
+        function handleMin() {
+            if (!selectedData || selectedData.length === 0) return;
+            
+            // 隐藏阈值调节滑动条
+            document.querySelector('.threshold-container').style.display = 'none';
+            
+            // 隐藏积分区域
+            chart.showIntegralArea = false;
+            
+            // 移除拟合线
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets.pop();
+            }
+            const minValue = Math.min(...selectedData.map(point => point.y));
+            document.querySelector('.analysis-result').textContent = `最小值: ${minValue.toFixed(1)} mV`;
+            chart.update();
+        }
+
+        // 添加新的分析函数
+        function handlePeakValley() {
+            if (!selectedData || selectedData.length < 3) return;
+            
+            // 隐藏积分区域
+            chart.showIntegralArea = false;
+            
+            // 移除拟合线
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets.pop();
+            }
+            
+            // 计算数据的总体波动范围
+            const yValues = selectedData.map(point => point.y);
+            const maxY = Math.max(...yValues);
+            const minY = Math.min(...yValues);
+            const dataRange = maxY - minY;
+            
+            // 从滑动条获取阈值比例
+            const thresholdPercentage = parseInt(document.getElementById('thresholdSlider').value) / 100;
+            
+            // 设置阈值：数据范围的一定比例
+            const threshold = dataRange * thresholdPercentage;
+            
+            // 改进的峰谷检测算法
+            const peaks = [];
+            const valleys = [];
+            const peakPoints = [];
+            const valleyPoints = [];
+            
+            // 第一步：找出所有可能的峰值和谷值候选点（相邻点比较）
+            const candidates = [];
+            for (let i = 1; i < selectedData.length - 1; i++) {
+                const prev = selectedData[i-1].y;
+                const curr = selectedData[i].y;
+                const next = selectedData[i+1].y;
+                
+                // 潜在峰值（比两侧都高）
+                if (curr > prev && curr > next) {
+                    candidates.push({
+                        index: i,
+                        value: curr,
+                        type: "peak",
+                        prominence: Math.min(curr - prev, curr - next) // 计算初步显著性
+                    });
+                }
+                // 潜在谷值（比两侧都低）
+                else if (curr < prev && curr < next) {
+                    candidates.push({
+                        index: i,
+                        value: curr,
+                        type: "valley",
+                        prominence: Math.min(prev - curr, next - curr) // 计算初步显著性
+                    });
+                }
+            }
+            
+            if (candidates.length === 0) {
+                document.querySelector('.analysis-result').textContent = `未找到任何峰谷点，请选择更多数据点`;
+                chart.update();
+                return;
+            }
+            
+            // 第二步：计算每个候选点的真实显著性（与附近点的最大差值）
+            const window = Math.max(5, Math.floor(selectedData.length * 0.05)); // 滑动窗口大小（至少5个点或数据长度的5%）
+            
+            candidates.forEach(candidate => {
+                const index = candidate.index;
+                const value = candidate.value;
+                const type = candidate.type;
+                
+                // 确定局部区域范围
+                const start = Math.max(0, index - window);
+                const end = Math.min(selectedData.length - 1, index + window);
+                
+                let localProminence = 0;
+                
+                if (type === "peak") {
+                    // 对于峰值，找到左右两侧最低点之间的差值
+                    let leftMin = value;
+                    for (let i = index; i >= start; i--) {
+                        if (selectedData[i].y < leftMin) {
+                            leftMin = selectedData[i].y;
+                        } else if (i < index && selectedData[i].y > selectedData[i+1].y) {
+                            // 如果遇到上升点，停止搜索
+                            break;
+                        }
+                    }
+                    
+                    let rightMin = value;
+                    for (let i = index; i <= end; i++) {
+                        if (selectedData[i].y < rightMin) {
+                            rightMin = selectedData[i].y;
+                        } else if (i > index && selectedData[i].y > selectedData[i-1].y) {
+                            // 如果遇到上升点，停止搜索
+                            break;
+                        }
+                    }
+                    
+                    localProminence = Math.min(value - leftMin, value - rightMin);
+                } else {
+                    // 对于谷值，找到左右两侧最高点之间的差值
+                    let leftMax = value;
+                    for (let i = index; i >= start; i--) {
+                        if (selectedData[i].y > leftMax) {
+                            leftMax = selectedData[i].y;
+                        } else if (i < index && selectedData[i].y < selectedData[i+1].y) {
+                            // 如果遇到下降点，停止搜索
+                            break;
+                        }
+                    }
+                    
+                    let rightMax = value;
+                    for (let i = index; i <= end; i++) {
+                        if (selectedData[i].y > rightMax) {
+                            rightMax = selectedData[i].y;
+                        } else if (i > index && selectedData[i].y < selectedData[i-1].y) {
+                            // 如果遇到下降点，停止搜索
+                            break;
+                        }
+                    }
+                    
+                    localProminence = Math.min(leftMax - value, rightMax - value);
+                }
+                
+                candidate.realProminence = localProminence;
+            });
+            
+            // 按显著性对候选点进行排序（从高到低）
+            candidates.sort((a, b) => b.realProminence - a.realProminence);
+            
+            // 为防止过密检测，设定一个最小间距（数据点个数的百分比，最小为5个点）
+            const minDistance = Math.max(5, Math.floor(selectedData.length * 0.03));
+            
+            // 存储已选择的候选点索引，用于防止峰谷过密
+            const selectedIndices = new Set();
+            
+            // 第三步：选择显著的峰谷点，同时确保它们之间有足够的距离
+            for (const candidate of candidates) {
+                // 检查该点是否满足阈值要求
+                if (candidate.realProminence < threshold) {
+                    continue; // 不满足阈值要求，跳过
+                }
+                
+                // 检查该点是否与已选择的点过近
+                let tooClose = false;
+                for (const idx of selectedIndices) {
+                    if (Math.abs(candidate.index - idx) < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                
+                // 如果与已有点过近，则跳过
+                if (tooClose) {
+                    continue;
+                }
+                
+                // 该点满足条件，加入结果
+                selectedIndices.add(candidate.index);
+                
+                const index = candidate.index;
+                if (candidate.type === "peak") {
+                    peaks.push(selectedData[index].y);
+                    peakPoints.push({
+                        x: selectedData[index].x,
+                        y: selectedData[index].y,
+                        index: index
+                    });
+                } else {
+                    valleys.push(selectedData[index].y);
+                    valleyPoints.push({
+                        x: selectedData[index].x,
+                        y: selectedData[index].y,
+                        index: index
+                    });
+                }
+            }
+            
+            // 如果检测到的点太少，尝试降低间距要求
+            if (peaks.length + valleys.length < 2) {
+                selectedIndices.clear();
+                const lowerDistance = Math.max(3, Math.floor(minDistance / 2));
+                
+                for (const candidate of candidates) {
+                    if (candidate.realProminence < threshold * 0.8) {
+                        continue;
+                    }
+                    
+                    let tooClose = false;
+                    for (const idx of selectedIndices) {
+                        if (Math.abs(candidate.index - idx) < lowerDistance) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    
+                    if (tooClose) {
+                        continue;
+                    }
+                    
+                    selectedIndices.add(candidate.index);
+                    
+                    const index = candidate.index;
+                    if (candidate.type === "peak") {
+                        peaks.push(selectedData[index].y);
+                        peakPoints.push({
+                            x: selectedData[index].x,
+                            y: selectedData[index].y,
+                            index: index
+                        });
+                    } else {
+                        valleys.push(selectedData[index].y);
+                        valleyPoints.push({
+                            x: selectedData[index].x,
+                            y: selectedData[index].y,
+                            index: index
+                        });
+                    }
+                }
+            }
+            
+            // 高亮显示找到的峰值和谷值点
+            const allPoints = [...peakPoints, ...valleyPoints].sort((a, b) => a.index - b.index);
+            const highlightData = allPoints.map(point => ({
+                x: point.x,
+                y: point.y
+            }));
+            
+            // 如果点数太少，显示提示信息
+            if (peaks.length === 0 && valleys.length === 0) {
+                document.querySelector('.analysis-result').textContent = `未找到显著的峰谷点，请调整阈值或选择区域`;
+                chart.update();
+                return;
+            }
+            
+            // 添加峰值和谷值点到图表
+            if (chart.data.datasets.length > 1) {
+                chart.data.datasets[1].data = highlightData;
+                chart.data.datasets[1].label = '峰谷点';
+            } else {
+                chart.data.datasets.push({
+                    label: '峰谷点',
+                    data: highlightData,
+                    borderColor: 'rgba(255, 99, 132, 0)',
+                    backgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    showLine: false
+                });
+            }
+            
+            // 计算相邻峰谷点之间的差值绝对值的半值
+            let peakValleyDiffs = [];
+            for (let i = 0; i < allPoints.length - 1; i++) {
+                const diff = Math.abs(allPoints[i].y - allPoints[i+1].y);
+                peakValleyDiffs.push(diff);
+            }
+            
+            let resultText = '';
+            
+            // 只显示峰谷个数和峰谷差值平均值的半值
+            if (peakValleyDiffs.length > 0) {
+                // 计算峰谷差值的平均值的半值
+                const avgPeakValleyDiff = peakValleyDiffs.reduce((sum, val) => sum + val, 0) / peakValleyDiffs.length;
+                const halfAvgPeakValleyDiff = avgPeakValleyDiff / 2;
+                resultText = `检测到 ${peaks.length} 个峰，${valleys.length} 个谷\n峰谷差半值: ${halfAvgPeakValleyDiff.toFixed(1)} mV`;
+            } else {
+                resultText = `检测到 ${peaks.length} 个峰，${valleys.length} 个谷\n无法计算峰谷差半值`;
+            }
+            
+            document.querySelector('.analysis-result').textContent = resultText;
+            chart.update();
+        }
+    </script>
+</body>
+</html>
