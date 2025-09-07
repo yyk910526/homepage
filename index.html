@@ -1,0 +1,543 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yykdislab - 低成本数字化物理实验系统专用网页</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        header {
+            position: relative;
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            width: 160px;
+            height: auto;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .logo:hover {
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        }
+        
+        .email-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .email-info:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .email-info a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .email-icon {
+            font-size: 1.1em;
+        }
+        
+        h1 {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin: 20px 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+        
+        header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .intro-section {
+            margin-bottom: 40px;
+        }
+        
+        .intro-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        .intro-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .intro-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .intro-title {
+            font-size: 2em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        .intro-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .intro-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 0;
+        }
+        
+        .system-images-gallery {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            text-align: center;
+        }
+        
+        .system-image-item {
+            background: rgba(255,255,255,0.5);
+            border-radius: 15px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .system-image-item:hover {
+            background: rgba(255,255,255,0.8);
+            transform: translateY(-5px);
+        }
+        
+        .system-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .system-image:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+        }
+        
+        .image-caption {
+            margin-top: 15px;
+            font-size: 0.95em;
+            color: #666;
+            font-style: italic;
+            font-weight: 500;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 2.2em;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .category {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .category:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .category h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+            position: relative;
+        }
+        
+        .category h3::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 30px;
+            height: 2px;
+            background: #764ba2;
+        }
+
+        .category ul {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            list-style: none;
+        }
+
+        .category li {
+            width: 100%;
+        }
+
+        .category a {
+            display: block;
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f1f3f4 0%, #ffffff 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .category a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+
+        .category a:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .category a:hover::before {
+            left: 0;
+        }
+        
+        .tools-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            color: white;
+            text-align: center;
+        }
+        
+        .tools-section h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+            color: white;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .tools-section a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .tools-section a:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .logo {
+                position: static;
+                margin: 0 auto 20px auto;
+                display: block;
+            }
+            
+            .email-info {
+                position: static;
+                display: inline-block;
+                margin-bottom: 20px;
+            }
+            
+            h1 {
+                font-size: 2.5em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .intro-card {
+                padding: 20px;
+            }
+            
+            .intro-icon {
+                font-size: 2.5em;
+            }
+            
+            .intro-title {
+                font-size: 1.6em;
+            }
+            
+            .intro-text {
+                font-size: 1em;
+            }
+            
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .category ul {
+                grid-template-columns: 1fr;
+            }
+            
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        }
+        
+        /* 加载动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .category {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .category:nth-child(1) { animation-delay: 0.1s; }
+        .category:nth-child(2) { animation-delay: 0.2s; }
+        .category:nth-child(3) { animation-delay: 0.3s; }
+        .category:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <header>
+        <img src="logo.jpg" alt="yykdislab Logo" class="logo">
+        <div class="email-info">
+                <a href="mailto:yangyankun@hnu.edu.cn">
+                    <i class="fas fa-envelope email-icon"></i>
+                    yangyankun@hnu.edu.cn
+                </a>
+        </div>
+        <h1>www.yykdislab.cn</h1>
+            <p>低成本数字化物理实验系统专用网页</p>
+    </header>
+
+        <div class="main-content">
+            <div class="intro-section">
+                <div class="intro-card">
+                    <div class="intro-icon">
+                        <i class="fas fa-atom"></i>
+                    </div>
+                    <h2 class="intro-title">系统简介</h2>
+                    <p class="intro-text">
+                        低成本数字化物理实验系统集成了多种中学物理实验常用的传感器，可通过蓝牙与Phyphox软件或专用的上位机网页进行数据交互，实现数据的实时处理和可视化。实验系统可覆盖大部分中学物理实验的定量研究需求，适用于课堂演示、分组实验及学生研究性学习。
+                    </p>
+                    <div class="system-images-gallery">
+                        <div class="system-image-item">
+                            <img src="数字化物理实验系统(常规模式).jpg" alt="低成本数字化物理实验系统正面" class="system-image">
+                            <p class="image-caption">数字化物理实验系统(常规模式)</p>
+                        </div>
+                        <div class="system-image-item">
+                            <img src="数字化物理实验系统(光电门模式).jpg" alt="低成本数字化物理实验系统背面与光电门" class="system-image">
+                            <p class="image-caption">数字化物理实验系统(光电门模式)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <div class="section">
+                <h2 class="section-title">上位机</h2>
+                
+                <div class="categories-grid">
+                    <div class="category">
+                        <h3><i class="fas fa-cog"></i> 通用系列</h3>
+        <ul>
+            <li><a href="https://yykdislab.cn/universal">• 通用多模式传感器</a></li>
+            <li><a href="https://yykdislab.cn/monitor">• 数字化实验监控系统</a></li>
+        </ul>
+                    </div>
+
+                    <div class="category">
+                        <h3><i class="fas fa-weight-hanging"></i> 力学系列</h3>
+        <ul>
+            <li><a href="https://yykdislab.cn/biforce">• 作用力与反作用力实验</a></li>
+            <li><a href="https://yykdislab.cn/spring">• 竖直方向弹簧振子实验</a></li>
+            <li><a href="https://yykdislab.cn/resonance">• 共振曲线绘制实验</a></li>
+        </ul>
+                    </div>
+        
+                    <div class="category">
+                        <h3><i class="fas fa-bolt"></i> 电磁学系列</h3>
+        <ul>
+            <li><a href="https://yykdislab.cn/capacity">• 电容器充放电实验</a></li>
+            <li><a href="https://yykdislab.cn/uicurve">• 伏安特性曲线绘制实验</a></li>
+            <li><a href="https://yykdislab.cn/ampere1">• 安培力实验1</a></li>
+            <li><a href="https://yykdislab.cn/ampere2">• 安培力实验2</a></li>
+            <li><a href="https://yykdislab.cn/ampere3">• 安培力实验3</a></li>
+            <li><a href="https://yykdislab.cn/magnet">• 法拉第电磁感应定律(B)</a></li>
+            <li><a href="https://yykdislab.cn/magnet_and_EMF">• 法拉第电磁感应定律(B & EMF)</a></li>
+            <li><a href="https://yykdislab.cn/EMF">• 法拉第电磁感应定律(EMF)</a></li>
+        </ul>
+                    </div>
+        
+                    <div class="category">
+                        <h3><i class="fas fa-eye"></i> 光电门系列</h3>
+        <ul>
+            <li><a href="https://yykdislab.cn/freefall">• 自由落体实验</a></li>
+        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tools-section">
+                <h2><i class="fas fa-tools"></i> 实用工具</h2>
+                <div class="tools-grid">
+                    <a href="https://yykdislab.cn/chinese">
+                        <i class="fas fa-language"></i> 汉字在线取模网页
+                    </a>
+                    <a href="https://yykdislab.cn/phyphox.apk">
+                        <i class="fas fa-download"></i> phyphox安装包
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
