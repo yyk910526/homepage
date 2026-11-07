@@ -139,12 +139,18 @@
         }
 
         .analysis-results .result-item {
-            font-size: 14px;
-            padding: 3px 8px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 8px 14px;
+            background: #e6f3ff;
+            border-radius: 6px;
+            border: 2px solid #007bff;
             white-space: nowrap;
+            color: #0056b3;
+        }
+        
+        .analysis-results .result-container {
+            gap: 12px;
         }
 
         .sync-zoom-toggle {
@@ -226,6 +232,256 @@
             border: 1px solid rgba(255, 0, 0, 0.3);
             pointer-events: none;
         }
+
+        /* 记录模式面板样式 */
+        .record-panel {
+            display: none;
+            margin: 10px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            width: 95vw;
+            max-width: 1400px;
+        }
+
+        .record-panel.show {
+            display: block;
+        }
+
+        .record-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+
+        .record-panel-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .record-panel-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .record-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .record-btn-primary {
+            background-color: #28a745;
+        }
+
+        .record-btn-primary:hover {
+            background-color: #218838;
+        }
+
+        .record-btn-primary:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .record-btn-secondary {
+            background-color: #17a2b8;
+        }
+
+        .record-btn-secondary:hover {
+            background-color: #138496;
+        }
+
+        .record-btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .record-btn-warning:hover {
+            background-color: #e0a800;
+        }
+
+        .record-btn-danger {
+            background-color: #dc3545;
+        }
+
+        .record-btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .record-btn-info {
+            background-color: #007bff;
+        }
+
+        .record-btn-info:hover {
+            background-color: #0056b3;
+        }
+
+        .record-content {
+            display: flex;
+            gap: 15px;
+        }
+
+        .record-table-container {
+            width: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .record-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .record-table th, .record-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 4px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .record-table th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+            font-weight: bold;
+        }
+
+        .record-table tbody tr:nth-child(even) {
+            background-color: #e6f3ff;
+        }
+
+        .record-chart-container {
+            flex: 1;
+            height: 400px;
+            background-color: white;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .current-integral-info {
+            margin: 10px 0;
+            padding: 10px 15px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+            font-size: 15px;
+            color: #856404;
+        }
+
+        .current-integral-info strong {
+            font-size: 18px;
+            color: #d63384;
+        }
+
+        /* 电容组标签页样式 */
+        .group-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #f1f3f5;
+            border-radius: 5px;
+        }
+
+        .group-tab {
+            padding: 6px 14px;
+            border: 2px solid #adb5bd;
+            border-radius: 20px;
+            background-color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .group-tab:hover {
+            border-color: #6f42c1;
+            color: #6f42c1;
+        }
+
+        .group-tab.active {
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+            color: #fff;
+        }
+
+        .group-tab .tab-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .group-tab .tab-count {
+            font-size: 12px;
+            opacity: 0.85;
+            font-weight: normal;
+        }
+
+        .table-group-title {
+            background-color: #6f42c1;
+            color: #fff;
+            padding: 6px 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        /* 斜率对比表样式 */
+        .slope-compare-box {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background-color: #fff8e1;
+            border-radius: 5px;
+            border: 2px solid #ffc107;
+        }
+
+        .slope-compare-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .slope-compare-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .slope-compare-table th, .slope-compare-table td {
+            border: 1px solid #dee2e6;
+            padding: 5px 8px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .slope-compare-table th {
+            background-color: #ffc107;
+            color: #212529;
+            font-weight: bold;
+        }
     </style>
     <!-- 保留原有头部内容... -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
@@ -268,10 +524,12 @@
     <div class="analysis-toolbar">
         <div class="analysis-buttons-container">
             <button class="analysis-button" data-analysis="exponentialFit">指数拟合</button>
-            <button class="analysis-button" data-analysis="integral">积分计算</button>
+            <button class="analysis-button" data-analysis="integral">面积计算</button>
             <button class="analysis-button" data-analysis="statistics">统计分析</button>
+            <button id="recordResultBtn" class="analysis-button" style="background-color: #28a745; color: white; border-color: #28a745; cursor: pointer; width: 140px;" disabled>📝 记录当前结果</button>
         </div>
         <div class="analysis-results"></div>
+        <button id="openRecordPanelBtn" class="analysis-button" style="margin-left: auto; background-color: #6f42c1; color: white; border-color: #6f42c1; cursor: pointer; width: 140px;">📊 打开记录面板</button>
     </div>
     <div id="chartContainer">
         <div id="currentChartContainer">
@@ -279,6 +537,66 @@
         </div>
         <div id="voltageChartContainer">
             <canvas id="voltageChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 记录模式面板 -->
+    <div id="recordPanel" class="record-panel">
+        <div class="record-panel-header">
+            <span class="record-panel-title">📊 面积数据记录与分析</span>
+            <div class="record-panel-buttons">
+                <button id="closeRecordPanelBtn" class="record-btn record-btn-danger">关闭记录面板</button>
+            </div>
+        </div>
+        
+        <div class="current-integral-info" id="currentIntegralInfo">
+            请先在图表上选择数据区域，然后点击"面积计算"，完成后可记录数据。
+        </div>
+        
+        <div class="record-panel-buttons" style="margin-bottom: 10px;">
+            <button id="addGroupBtn" class="record-btn" style="background-color: #6f42c1;">➕ 新增电容组</button>
+            <button id="fitLineBtn" class="record-btn record-btn-warning">📈 线性拟合 (Q-U图像)</button>
+            <button id="deleteLastRecordBtn" class="record-btn record-btn-secondary">❌ 删除最后一条</button>
+            <button id="clearRecordBtn" class="record-btn record-btn-danger">🗑️ 清除当前组</button>
+            <button id="exportRecordBtn" class="record-btn record-btn-info">📥 导出记录数据</button>
+        </div>
+        
+        <div class="group-tabs" id="groupTabs"></div>
+        
+        <div class="record-content">
+            <div class="record-table-container">
+                <div class="table-group-title" id="tableGroupTitle">当前组：电容 1</div>
+                <table class="record-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>面积 Q (mC)</th>
+                            <th>最大电压 U (V)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="record-chart-container">
+                <canvas id="recordScatterChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="slope-compare-box" id="slopeCompareBox" style="display: none;">
+            <div class="slope-compare-title">📐 各电容组拟合结果对比（斜率即电容 C）</div>
+            <table class="slope-compare-table">
+                <thead>
+                    <tr>
+                        <th>电容组</th>
+                        <th>数据点数</th>
+                        <th>斜率 C (mF)</th>
+                        <th>截距 (mC)</th>
+                        <th>R²</th>
+                    </tr>
+                </thead>
+                <tbody id="slopeCompareBody"></tbody>
+            </table>
         </div>
     </div>
 
@@ -299,6 +617,8 @@
         let animationFrameId = null;
         let startX, startY;
         let startXMin, startXMax, startYMin, startYMax;
+        // 用于存储需要高亮显示的最大电压点 { x: 时间, y: 电压值 }
+        let highlightVoltagePoint = null;
 
         // 初始化两个图表
         function initializeCharts() {
@@ -384,9 +704,109 @@
                 }
             };
 
+            // 添加最大电压点高亮插件（在电压图上突出显示，并标注数值）
+            const highlightPointPlugin = {
+                id: 'highlightPoint',
+                afterDatasetsDraw: (chart) => {
+                    if (!highlightVoltagePoint || chart !== voltageChart) return;
+                    if (!chart.chartArea || !chart.scales.x || !chart.scales.y) return;
+
+                    const ctx = chart.ctx;
+                    const { x, y } = highlightVoltagePoint;
+                    const px = chart.scales.x.getPixelForValue(x);
+                    const py = chart.scales.y.getPixelForValue(y);
+
+                    // 若点在可视区域外则不绘制
+                    if (px < chart.chartArea.left || px > chart.chartArea.right ||
+                        py < chart.chartArea.top || py > chart.chartArea.bottom) {
+                        return;
+                    }
+
+                    ctx.save();
+
+                    // 外层光晕圈
+                    ctx.beginPath();
+                    ctx.arc(px, py, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 193, 7, 0.35)';
+                    ctx.fill();
+
+                    // 中间实心圆
+                    ctx.beginPath();
+                    ctx.arc(px, py, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffc107';
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#e8590c';
+                    ctx.stroke();
+
+                    // 十字准星（突出该点位置）
+                    ctx.beginPath();
+                    ctx.moveTo(px - 22, py);
+                    ctx.lineTo(px - 13, py);
+                    ctx.moveTo(px + 13, py);
+                    ctx.lineTo(px + 22, py);
+                    ctx.moveTo(px, py - 22);
+                    ctx.lineTo(px, py - 13);
+                    ctx.moveTo(px, py + 13);
+                    ctx.lineTo(px, py + 22);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#e8590c';
+                    ctx.stroke();
+
+                    // 标注文字
+                    const label = `U最大 ${y.toFixed(2)} V  (t=${x.toFixed(2)}s)`;
+                    ctx.font = 'bold 13px sans-serif';
+                    const textWidth = ctx.measureText(label).width;
+
+                    // 标签位置：默认在点上方，若超出则放下方
+                    let labelY = py - 26;
+                    if (labelY < chart.chartArea.top + 14) {
+                        labelY = py + 30;
+                    }
+                    let labelX = px - textWidth / 2 - 6;
+                    // 防止标签超出左右边界
+                    if (labelX < chart.chartArea.left) labelX = chart.chartArea.left;
+                    if (labelX + textWidth + 12 > chart.chartArea.right) {
+                        labelX = chart.chartArea.right - textWidth - 12;
+                    }
+
+                    // 标签背景
+                    ctx.fillStyle = 'rgba(255, 193, 7, 0.92)';
+                    ctx.strokeStyle = '#e8590c';
+                    ctx.lineWidth = 1.5;
+                    const rectRadius = 4;
+                    const rectX = labelX;
+                    const rectY = labelY - 15;
+                    const rectW = textWidth + 12;
+                    const rectH = 21;
+                    ctx.beginPath();
+                    ctx.moveTo(rectX + rectRadius, rectY);
+                    ctx.lineTo(rectX + rectW - rectRadius, rectY);
+                    ctx.quadraticCurveTo(rectX + rectW, rectY, rectX + rectW, rectY + rectRadius);
+                    ctx.lineTo(rectX + rectW, rectY + rectH - rectRadius);
+                    ctx.quadraticCurveTo(rectX + rectW, rectY + rectH, rectX + rectW - rectRadius, rectY + rectH);
+                    ctx.lineTo(rectX + rectRadius, rectY + rectH);
+                    ctx.quadraticCurveTo(rectX, rectY + rectH, rectX, rectY + rectH - rectRadius);
+                    ctx.lineTo(rectX, rectY + rectRadius);
+                    ctx.quadraticCurveTo(rectX, rectY, rectX + rectRadius, rectY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 标签文字
+                    ctx.fillStyle = '#7f2d00';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, rectX + 6, rectY + rectH / 2);
+
+                    ctx.restore();
+                }
+            };
+
             // 注册插件
             Chart.register(selectionPlugin);
             Chart.register(integralAreaPlugin);
+            Chart.register(highlightPointPlugin);
 
             // 修改图表配置，添加插件配置
             const commonOptions = {
@@ -684,10 +1104,13 @@
             dataBuffer.current = [];
             dataBuffer.voltage = [];
             startTime = null;
+            lastIntegralResult = null;
+            highlightVoltagePoint = null;
             currentChart.data.datasets[0].data = [];
             voltageChart.data.datasets[0].data = [];
             currentChart.update();
             voltageChart.update();
+            updateCurrentIntegralInfo();
         });
 
         // 导出数据
@@ -780,10 +1203,26 @@
             });
         }
 
-        // 处理鼠标滚轮缩放
+        // 同步另一个图表的视图（仅同步X轴时间，Y轴各自独立）
+        function syncChartView(sourceChart, targetChart, options) {
+            if (!targetChart || targetChart === sourceChart) return;
+
+            const { syncX = true } = options;
+
+            // X轴：时间轴完全一致，直接复制范围
+            if (syncX) {
+                targetChart.options.scales.x.min = sourceChart.options.scales.x.min;
+                targetChart.options.scales.x.max = sourceChart.options.scales.x.max;
+                targetChart.update('none');
+            }
+        }
+
+        // 处理鼠标滚轮缩放（两个图表同步）
         function handleWheel(e) {
             e.preventDefault();
-            const chart = e.target === document.getElementById('currentChart') ? currentChart : voltageChart;
+            const isCurrentCanvas = e.target === document.getElementById('currentChart');
+            const chart = isCurrentCanvas ? currentChart : voltageChart;
+            const otherChart = isCurrentCanvas ? voltageChart : currentChart;
             
             if (!chart.chartArea) return;
 
@@ -822,6 +1261,19 @@
             }
 
             chart.update('none');
+
+            // 同步另一个图表：X轴始终同步，Y轴在"整体缩放"模式下同步
+            // yAnchorFraction：鼠标在Y轴方向上占源图表高度的比例
+            let yAnchorFraction = 0.5;
+            if (!isXAxisZoomMode && yScale.max !== yScale.min) {
+                yAnchorFraction = (mouseYValue - yScale.min) / (yScale.max - yScale.min);
+            }
+            syncChartView(chart, otherChart, {
+                syncX: true,
+                syncY: !isXAxisZoomMode,
+                zoomFactor: zoomFactor,
+                yAnchorFraction: yAnchorFraction
+            });
         }
 
         // 开始拖动或选择
@@ -882,6 +1334,10 @@
                 selectedChart.options.scales.y.min = startYMin + yShift;
                 selectedChart.options.scales.y.max = startYMax + yShift;
                 selectedChart.update('none');
+
+                // 同步另一个图表：仅同步X轴时间，Y轴各自独立
+                const otherChart = selectedChart === currentChart ? voltageChart : currentChart;
+                syncChartView(selectedChart, otherChart, { syncX: true });
             }
         }
 
@@ -918,6 +1374,8 @@
                 selectionEnd = null;
                 selectedChart = null;
                 selectedData = null;
+                lastIntegralResult = null;
+                highlightVoltagePoint = null;
                 
                 // 清除积分区域显示
                 currentChart.showIntegralArea = false;
@@ -944,6 +1402,9 @@
                 // 清除分析结果
                 analysisResults.innerHTML = '';
                 analysisResults.classList.remove('show');
+                
+                // 更新记录面板的当前积分信息
+                updateCurrentIntegralInfo();
                 
                 chart.update();
             }
@@ -982,7 +1443,7 @@
                 currentChart.showIntegralArea = false;
                 voltageChart.showIntegralArea = false;
                 
-                // 只有在点击积分计算按钮时才显示积分区域
+                // 只有在点击面积计算按钮时才显示面积区域
                 if (analysisType === 'integral') {
                     selectedChart.showIntegralArea = true;
                 }
@@ -1115,42 +1576,99 @@
             }
         }
 
+        // 用于存储最近一次面积计算的结果
+        let lastIntegralResult = null;
+
         function calculateIntegral(data, unit, dataType) {
             let integral = 0;
             // 直接使用 Math.max 和 map 来找到最大值
             const maxValue = Math.max(...data.map(point => point.y));
 
-            // 计算积分
+            // 计算面积（积分）
             for (let i = 1; i < data.length; i++) {
                 const dx = data[i].x - data[i-1].x;
                 const avgY = (data[i].y + data[i-1].y) / 2;
                 integral += dx * avgY;
             }
             
-            const integralUnit = unit === 'mA' ? 'mA·s' : 'V·s';
+            // mA·s 转换为 mC（1 mA·s = 1 mC）
+            const integralUnit = unit === 'mA' ? 'mC' : 'V·s';
             
-            // 显示积分区域
+            // 显示面积区域
             selectedChart.showIntegralArea = true;
             selectedChart.update();
             
-            let result = `
-                <div class="result-container">
-                    <div class="result-item">定积分值: ${integral.toFixed(4)} ${integralUnit}</div>
-                    <div class="result-item">区间: [${data[0].x.toFixed(2)}, ${data[data.length-1].x.toFixed(2)}] s</div>
-                    <div class="result-item">${dataType}最大值: ${maxValue.toFixed(3)} ${unit}</div>
-            `;
-
-            // 仅在电流数的情况下显示对应电压最大值
+            let voltageMaxValue = 0;
+            // 仅在电流数据的情况下显示对应电压最大值
             if (dataType === '电流') {
                 const voltageData = dataBuffer.voltage.filter(point => 
                     point.x >= data[0].x && point.x <= data[data.length-1].x
                 );
-                const voltageMaxValue = Math.max(...voltageData.map(point => point.y));
+                if (voltageData.length > 0) {
+                    // 找出最大电压点（同时记录时间坐标用于高亮）
+                    const maxVoltagePoint = voltageData.reduce((max, point) => 
+                        point.y > max.y ? point : max
+                    );
+                    voltageMaxValue = maxVoltagePoint.y;
+                    highlightVoltagePoint = { x: maxVoltagePoint.x, y: maxVoltagePoint.y };
+                } else {
+                    highlightVoltagePoint = null;
+                }
+                // 刷新电压图显示高亮点
+                voltageChart.update('none');
+            } else {
+                // 非电流分析时清除高亮
+                highlightVoltagePoint = null;
+                voltageChart.update('none');
+            }
+
+            // 保存面积结果到全局变量（方便记录数据）
+            lastIntegralResult = {
+                integral: integral,
+                integralUnit: integralUnit,
+                maxValue: maxValue,
+                maxValueUnit: unit,
+                dataType: dataType,
+                voltageMaxValue: voltageMaxValue,
+                data: data
+            };
+
+            // 更新记录面板的当前面积信息
+            updateCurrentIntegralInfo();
+            
+            let result = `
+                <div class="result-container">
+                    <div class="result-item">面积: ${integral.toFixed(4)} ${integralUnit}</div>
+                    <div class="result-item">区间: [${data[0].x.toFixed(2)}, ${data[data.length-1].x.toFixed(2)}] s</div>
+                    <div class="result-item">${dataType}最大值: ${maxValue.toFixed(3)} ${unit}</div>
+            `;
+
+            if (dataType === '电流') {
                 result += `<div class="result-item">对应电压最大值: ${voltageMaxValue.toFixed(3)} V</div>`;
             }
 
             result += '</div>';
             return result;
+        }
+
+        // 更新记录面板中显示的当前面积信息
+        function updateCurrentIntegralInfo() {
+            const infoDiv = document.getElementById('currentIntegralInfo');
+            // 两个按钮都需要同步状态
+            const recordResultBtn = document.getElementById('recordResultBtn');
+            const group = getActiveGroup();
+            const groupHint = group ? `（将记入「${group.name}」组）` : '（请先点击"新增电容组"）';
+            
+            if (lastIntegralResult && lastIntegralResult.dataType === '电流') {
+                infoDiv.innerHTML = `当前面积结果：Q = <strong>${lastIntegralResult.integral.toFixed(4)} ${lastIntegralResult.integralUnit}</strong>，最大电压 U = <strong>${lastIntegralResult.voltageMaxValue.toFixed(3)} V</strong> ${groupHint}`;
+                if (recordResultBtn) recordResultBtn.disabled = false;
+            } else if (lastIntegralResult) {
+                infoDiv.innerHTML = `当前面积结果：面积 = <strong>${lastIntegralResult.integral.toFixed(4)} ${lastIntegralResult.integralUnit}</strong>（注意：请选择电流曲线进行面积计算以获得Q值）`;
+                if (recordResultBtn) recordResultBtn.disabled = true;
+            } else {
+                infoDiv.innerHTML = `请先在图表上选择数据区域，然后点击"面积计算"，完成后可记录数据。`;
+                if (recordResultBtn) recordResultBtn.disabled = true;
+            }
         }
 
         function calculateVoltageMaxInRange(data) {
@@ -1219,6 +1737,544 @@
 
         // 添加自动缩放按钮的事件监听器
         document.getElementById('autoScaleButton').addEventListener('click', autoScaleCharts);
+
+        // ==================== 记录面板功能 ====================
+        
+        // 多组电容数据管理
+        // 每个组: { id, name, color, data: [{Q, U}], fit: {slope, intercept, r2} | null }
+        const GROUP_COLORS = [
+            'rgb(220, 53, 69)',
+            'rgb(0, 123, 255)',
+            'rgb(40, 167, 69)',
+            'rgb(255, 193, 7)',
+            'rgb(111, 66, 193)',
+            'rgb(23, 162, 184)',
+            'rgb(255, 99, 71)',
+            'rgb(76, 175, 80)'
+        ];
+
+        let dataGroups = [];
+        let activeGroupIndex = 0;
+        let recordScatterChart = null;
+        let isFitLineVisible = false;
+
+        // 创建新的一组电容数据
+        function createGroup(name) {
+            const index = dataGroups.length;
+            const color = GROUP_COLORS[index % GROUP_COLORS.length];
+            return {
+                id: index + 1,
+                name: name || `电容 ${index + 1}`,
+                color: color,
+                data: [],
+                fit: null
+            };
+        }
+
+        // 获取当前激活组
+        function getActiveGroup() {
+            return dataGroups[activeGroupIndex];
+        }
+
+        // 渲染组标签页
+        function renderGroupTabs() {
+            const tabsContainer = document.getElementById('groupTabs');
+            tabsContainer.innerHTML = '';
+            
+            dataGroups.forEach((group, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'group-tab' + (index === activeGroupIndex ? ' active' : '');
+                tab.innerHTML = `
+                    <span class="tab-color-dot" style="background-color: ${group.color};"></span>
+                    <span>${group.name}</span>
+                    <span class="tab-count">(${group.data.length})</span>
+                `;
+                tab.addEventListener('click', () => {
+                    activeGroupIndex = index;
+                    renderGroupTabs();
+                    renderGroupTable();
+                    updateCurrentIntegralInfo();
+                });
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        // 渲染当前组的表格
+        function renderGroupTable() {
+            const group = getActiveGroup();
+            if (!group) return;
+            
+            document.getElementById('tableGroupTitle').textContent = `当前组：${group.name}`;
+            const tableBody = document.getElementById('recordTableBody');
+            tableBody.innerHTML = '';
+            
+            group.data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.Q}</td>
+                    <td>${item.U}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 自动滚动表格到底部
+            const tableContainer = document.querySelector('.record-table-container');
+            tableContainer.scrollTop = tableContainer.scrollHeight;
+        }
+
+        // 重建散点图的所有数据系列（每组一个散点系列 + 一个拟合线系列）
+        function rebuildChartDatasets() {
+            if (!recordScatterChart) return;
+
+            const datasets = [];
+            
+            dataGroups.forEach((group) => {
+                // 散点系列
+                datasets.push({
+                    label: group.name,
+                    data: group.data.map(item => ({ x: item.U, y: item.Q })),
+                    backgroundColor: group.color,
+                    borderColor: group.color,
+                    pointRadius: 7,
+                    pointHoverRadius: 9,
+                    order: 2
+                });
+
+                // 拟合线系列
+                datasets.push({
+                    label: `${group.name} 拟合`,
+                    data: group.fit ? buildFitLineData(group.fit) : [],
+                    type: 'line',
+                    borderColor: group.color,
+                    borderWidth: 3,
+                    borderDash: group.fit ? [] : [6, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    hidden: !group.fit,
+                    order: 1
+                });
+            });
+
+            recordScatterChart.data.datasets = datasets;
+            recordScatterChart.update('none');
+        }
+
+        // 根据拟合结果生成拟合线数据（从 x=0 延伸到 x 轴右端）
+        function buildFitLineData(fit) {
+            const endX = fit.fitEndX;
+            return [
+                { x: 0, y: fit.intercept },
+                { x: endX, y: fit.slope * endX + fit.intercept }
+            ];
+        }
+
+        // 初始化记录面板的散点图
+        function initializeRecordScatterChart() {
+            const ctx = document.getElementById('recordScatterChart').getContext('2d');
+            recordScatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: 0,
+                            title: {
+                                display: true,
+                                text: '最大电压 U (V)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.08)',
+                                zeroLineColor: '#495057',
+                                zeroLineWidth: 2,
+                                drawBorder: true,
+                                borderColor: '#495057'
+                            },
+                            ticks: {
+                                color: '#495057'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '面积 Q (mC)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.08)',
+                                zeroLineColor: '#495057',
+                                zeroLineWidth: 2,
+                                drawBorder: true,
+                                borderColor: '#495057'
+                            },
+                            ticks: {
+                                color: '#495057'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: '',
+                            padding: { top: 10, bottom: 10 },
+                            color: '#28a745',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 打开记录面板
+        document.getElementById('openRecordPanelBtn').addEventListener('click', () => {
+            const panel = document.getElementById('recordPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                if (!recordScatterChart) {
+                    initializeRecordScatterChart();
+                }
+                // 确保至少存在一个组
+                if (dataGroups.length === 0) {
+                    dataGroups.push(createGroup('电容 1'));
+                    activeGroupIndex = 0;
+                    renderGroupTabs();
+                    renderGroupTable();
+                    rebuildChartDatasets();
+                }
+            }
+            updateCurrentIntegralInfo();
+        });
+
+        // 关闭记录面板
+        document.getElementById('closeRecordPanelBtn').addEventListener('click', () => {
+            document.getElementById('recordPanel').classList.remove('show');
+        });
+
+        // 新增电容组
+        document.getElementById('addGroupBtn').addEventListener('click', () => {
+            const input = prompt('请输入这一组电容的名称/标称值（如：电容A、470µF）：', `电容 ${dataGroups.length + 1}`);
+            if (input === null) return;
+
+            const name = input.trim() || `电容 ${dataGroups.length + 1}`;
+            const group = createGroup(name);
+            dataGroups.push(group);
+            activeGroupIndex = dataGroups.length - 1;
+
+            renderGroupTabs();
+            renderGroupTable();
+            rebuildChartDatasets();
+            autoAdjustRecordAxes();
+            recordScatterChart.update();
+            updateCurrentIntegralInfo();
+
+            alert(`已新增「${name}」组，现在记录的数据将归入该组。`);
+        });
+
+        // 记录当前面积结果到当前组的表格和图表
+        document.getElementById('recordResultBtn').addEventListener('click', () => {
+            if (!lastIntegralResult || lastIntegralResult.dataType !== '电流') {
+                alert('请先选择电流曲线进行面积计算！');
+                return;
+            }
+
+            const group = getActiveGroup();
+            if (!group) {
+                alert('请先点击"新增电容组"创建一组数据！');
+                return;
+            }
+
+            const Q = Number(lastIntegralResult.integral.toFixed(4));
+            const U = Number(lastIntegralResult.voltageMaxValue.toFixed(3));
+
+            // 添加到当前组数据
+            group.data.push({ Q, U });
+
+            // 渲染表格和标签页
+            renderGroupTabs();
+            renderGroupTable();
+
+            // 重建图表数据系列
+            rebuildChartDatasets();
+
+            // 如果拟合线正在显示，需要重新计算拟合
+            if (isFitLineVisible) {
+                performLinearFit();
+            }
+
+            // 自动调整坐标轴范围
+            autoAdjustRecordAxes();
+            recordScatterChart.update();
+        });
+
+        // 删除最后一条记录
+        document.getElementById('deleteLastRecordBtn').addEventListener('click', () => {
+            const group = getActiveGroup();
+            if (!group || group.data.length === 0) {
+                alert('当前组没有可删除的记录！');
+                return;
+            }
+
+            // 删除当前组最后一条数据
+            group.data.pop();
+            group.fit = null;
+
+            // 重新渲染
+            renderGroupTabs();
+            renderGroupTable();
+            rebuildChartDatasets();
+
+            // 如果拟合线正在显示，重新计算
+            if (isFitLineVisible) {
+                performLinearFit();
+            }
+
+            autoAdjustRecordAxes();
+            recordScatterChart.update();
+        });
+
+        // 清除当前组记录
+        document.getElementById('clearRecordBtn').addEventListener('click', () => {
+            const group = getActiveGroup();
+            if (!group || group.data.length === 0) {
+                alert('当前组没有记录可清除！');
+                return;
+            }
+            if (!confirm(`确定要清除「${group.name}」的全部记录吗？`)) return;
+
+            group.data = [];
+            group.fit = null;
+
+            renderGroupTabs();
+            renderGroupTable();
+            rebuildChartDatasets();
+
+            // 检查是否还有组可以拟合
+            const hasFit = dataGroups.some(g => g.fit);
+            if (hasFit) {
+                performLinearFit();
+            } else {
+                isFitLineVisible = false;
+                recordScatterChart.options.plugins.title.text = '';
+                document.getElementById('slopeCompareBox').style.display = 'none';
+                // 恢复按钮文字
+                document.getElementById('fitLineBtn').textContent = '📈 线性拟合 (Q-U图像)';
+            }
+
+            autoAdjustRecordAxes();
+            recordScatterChart.update();
+        });
+
+        // 导出记录数据（每组一个工作表）
+        document.getElementById('exportRecordBtn').addEventListener('click', () => {
+            const validGroups = dataGroups.filter(g => g.data.length > 0);
+            if (validGroups.length === 0) {
+                alert('没有可导出的数据！');
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+            
+            validGroups.forEach((group, index) => {
+                const exportData = [['序号', '面积 Q (mC)', '最大电压 U (V)']];
+                group.data.forEach((item, i) => {
+                    exportData.push([i + 1, item.Q, item.U]);
+                });
+                if (group.fit) {
+                    exportData.push([]);
+                    exportData.push(['拟合斜率 C (mF)', group.fit.slope.toFixed(6)]);
+                    exportData.push(['拟合截距 (mC)', group.fit.intercept.toFixed(6)]);
+                    exportData.push(['R²', group.fit.r2.toFixed(6)]);
+                }
+                const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+                // 工作表名不能超过31个字符，且不能含特殊字符
+                const sheetName = group.name.replace(/[\\/?*[\]:]/g, '').substring(0, 31) || `组${index + 1}`;
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            });
+
+            XLSX.writeFile(workbook, '电容器面积数据.xlsx');
+        });
+
+        // 线性拟合计算（对所有数据点足够的组分别拟合）
+        document.getElementById('fitLineBtn').addEventListener('click', () => {
+            // 已显示拟合线时，再次点击取消拟合
+            if (isFitLineVisible) {
+                cancelLinearFit();
+                return;
+            }
+
+            const validGroups = dataGroups.filter(g => g.data.length >= 2);
+            if (validGroups.length === 0) {
+                alert('至少需要一个电容组有2条以上记录才能进行拟合！');
+                return;
+            }
+            performLinearFit();
+        });
+
+        // 取消线性拟合：隐藏所有拟合线和对比表
+        function cancelLinearFit() {
+            dataGroups.forEach(g => { g.fit = null; });
+            isFitLineVisible = false;
+
+            rebuildChartDatasets();
+
+            recordScatterChart.options.plugins.title.text = '';
+            document.getElementById('slopeCompareBox').style.display = 'none';
+
+            // 恢复按钮文字
+            document.getElementById('fitLineBtn').textContent = '📈 线性拟合 (Q-U图像)';
+
+            recordScatterChart.update();
+        }
+
+        function performLinearFit() {
+            // 对所有数据点足够（>=2）的组分别进行线性拟合
+            const validGroups = dataGroups.filter(g => g.data.length >= 2);
+            if (validGroups.length === 0) {
+                // 没有可拟合的组，取消拟合显示
+                if (isFitLineVisible) cancelLinearFit();
+                return;
+            }
+
+            const allFitResults = [];
+
+            validGroups.forEach(group => {
+                // 转换为 {x: U, y: Q} 形式的点
+                const points = group.data.map(item => ({ x: item.U, y: item.Q }));
+
+                let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                const n = points.length;
+
+                points.forEach(point => {
+                    sumX += point.x;
+                    sumY += point.y;
+                    sumXY += point.x * point.y;
+                    sumXX += point.x * point.x;
+                });
+
+                // 最小二乘法计算斜率和截距
+                const denominator = n * sumXX - sumX * sumX;
+                const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
+                const intercept = (sumY - slope * sumX) / n;
+
+                // 计算R²
+                const yMean = sumY / n;
+                let ssTotal = 0, ssResidual = 0;
+                points.forEach(point => {
+                    const yPred = slope * point.x + intercept;
+                    ssTotal += Math.pow(point.y - yMean, 2);
+                    ssResidual += Math.pow(point.y - yPred, 2);
+                });
+                const rSquared = ssTotal !== 0 ? 1 - (ssResidual / ssTotal) : 1;
+
+                // 拟合线从 x=0 延伸到 x 轴右端
+                const xMax = Math.max(...points.map(p => p.x));
+                const xRange = xMax || 1;
+                const xPadding = Math.max(xRange * 0.1, 0.1);
+
+                group.fit = {
+                    slope: slope,
+                    intercept: intercept,
+                    r2: rSquared,
+                    fitEndX: xMax + xPadding
+                };
+
+                allFitResults.push({ group: group, fit: group.fit });
+            });
+
+            // 数据不足的组清除拟合结果
+            dataGroups.forEach(g => {
+                if (g.data.length < 2) g.fit = null;
+            });
+
+            rebuildChartDatasets();
+
+            // 更新图表标题：显示所有组的方程
+            const titleParts = allFitResults.map(({ group, fit }) => {
+                const sign = fit.intercept >= 0 ? '+' : '-';
+                return `${group.name}: Q = ${fit.slope.toFixed(4)}U ${sign} ${Math.abs(fit.intercept).toFixed(4)}`;
+            });
+            recordScatterChart.options.plugins.title.text = '拟合方程：' + titleParts.join('    |    ');
+
+            // 更新斜率对比表
+            updateSlopeCompareTable(allFitResults);
+
+            autoAdjustRecordAxes();
+            recordScatterChart.update();
+            isFitLineVisible = true;
+
+            // 按钮切换为"取消拟合"状态
+            document.getElementById('fitLineBtn').textContent = '❌ 取消线性拟合';
+        }
+
+        // 更新斜率对比表
+        function updateSlopeCompareTable(fitResults) {
+            const compareBox = document.getElementById('slopeCompareBox');
+            const compareBody = document.getElementById('slopeCompareBody');
+            
+            if (fitResults.length === 0) {
+                compareBox.style.display = 'none';
+                return;
+            }
+
+            compareBox.style.display = 'block';
+            compareBody.innerHTML = '';
+
+            fitResults.forEach(({ group, fit }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="color: ${group.color}; font-weight: bold;">● ${group.name}</td>
+                    <td>${group.data.length}</td>
+                    <td style="font-weight: bold; color: #c7254e;">${fit.slope.toFixed(6)}</td>
+                    <td>${fit.intercept.toFixed(6)}</td>
+                    <td>${fit.r2.toFixed(4)}</td>
+                `;
+                compareBody.appendChild(row);
+            });
+        }
+
+        // 自动调整记录图表的坐标轴范围
+        function autoAdjustRecordAxes() {
+            // 汇总所有组的数据点范围
+            const allPoints = [];
+            dataGroups.forEach(group => {
+                group.data.forEach(item => allPoints.push({ x: item.U, y: item.Q }));
+            });
+            if (allPoints.length === 0) return;
+
+            const xValues = allPoints.map(p => p.x);
+            const yValues = allPoints.map(p => p.y);
+
+            const xMin = Math.min(...xValues);
+            const xMax = Math.max(...xValues);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+
+            // 计算边距（范围的10%，但至少为0.1）
+            const xRange = xMax - xMin || 1;
+            const yRange = yMax - yMin || 1;
+            const xPadding = Math.max(xRange * 0.1, 0.1);
+            const yPadding = Math.max(yRange * 0.1, 0.1);
+
+            // x 轴固定从 0 开始（U 为电压，非负）
+            // y 轴范围同时包含 0 与实际数据范围，保证原点 (0,0) 在图内可见
+            recordScatterChart.options.scales.x.min = 0;
+            recordScatterChart.options.scales.x.max = xMax + xPadding;
+            recordScatterChart.options.scales.y.min = Math.min(0, yMin - yPadding);
+            recordScatterChart.options.scales.y.max = Math.max(0, yMax + yPadding);
+
+            recordScatterChart.update('none');
+        }
     </script>
 </body>
 </html>
